@@ -5,7 +5,7 @@
 				class="web-ruleForm">
 				<div class="register-brand">
 					<img class="logo" src="../../public/logo.png" />
-					<div>欢迎成为FreeChat的用户</div>
+					<div>创建您的账号</div>
 				</div>
 				<el-form-item label="用户名" prop="userName">
 					<el-input type="userName" v-model="registerForm.userName" autocomplete="off"
@@ -28,20 +28,17 @@
 					<el-button @click="resetForm('registerForm')">清空</el-button>
 				</el-form-item>
 				<div class="to-login">
-					<router-link to="/login">已有账号,前往登录</router-link>
+					<router-link to="/login">已有账号？前往登录</router-link>
 				</div>
 			</el-form>
 		</div>
-		<icp></icp>
 	</el-container>
 </template>
 
 <script>
-import Icp from '../components/common/Icp.vue'
 export default {
 	name: "login",
 	components: {
-		Icp
 	},
 	data() {
 		var checkUserName = (rule, value, callback) => {

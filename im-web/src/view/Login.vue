@@ -4,8 +4,7 @@
 			<el-form class="login-form" :model="loginForm" status-icon :rules="rules" ref="loginForm" label-width="60px"
 				@keyup.enter.native="submitForm('loginForm')">
 				<div class="login-brand">
-					<img class="logo" src="../../public/logo.png" />
-					<div>Happy Chat</div>
+					<div>IM</div>
 				</div>
 				<el-form-item label="终端" prop="userName" v-show="false">
 					<el-input type="terminal" v-model="loginForm.terminal" autocomplete="off"></el-input>
@@ -27,16 +26,13 @@
 				</div>
 			</el-form>
 		</div>
-		<icp></icp>
 	</div>
 </template>
 
 <script>
-import Icp from '../components/common/Icp.vue'
 export default {
 	name: "login",
 	components: {
-		Icp
 	},
 	data() {
 		var checkUsername = (rule, value, callback) => {
@@ -156,11 +152,6 @@ export default {
 				text-transform: uppercase;
 				text-align: center;
 
-				.logo {
-					width: 30px;
-					height: 30px;
-					margin-right: 10px;
-				}
 			}
 
 			.register {
