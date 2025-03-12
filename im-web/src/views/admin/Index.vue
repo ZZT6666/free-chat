@@ -48,17 +48,81 @@ export default {
                 groupCount: 0,
                 fileCount: 0
             },
-            loading: false
+            loading: false,
+            userList: [],
+            groupList: []
         }
     },
     methods: {
-        async fetchStatistics() {
+        async loadUserList() {
+            try {
+                const res = await this.$http({
+                    url: '/user/findAllUser',
+                    method: 'get'
+                })
+                if (res) {
+                    this.userList = res
+                    this.statistics.userCount = this.userList.length
+                    
+                    // 获取所有用户ID
+                    const userIds = this.userList.map(user => user.id).join(',')
+                    
+                    // 获取在线用户终端信息
+                    const onlineRes = await this.$http({
+                        url: '/user/terminal/online',
+                        method: 'get',
+                        params: {
+                            userIds
+                        }
+                    })
+                    
+                    // 统计在线用户数量（有终端信息的即为在线用户）
+                    if (onlineRes) {
+                        this.statistics.onlineCount = onlineRes.length
+                    }
+                }
+            } catch (error) {
+                console.error('获取用户列表失败:', error)
+                this.$message.error('获取用户列表失败')
+            }
+        },
+
+        async loadGroupList() {
+            try {
+                const res = await this.$http({
+                    url: '/group/groupList',
+                    method: 'get'
+                })
+                if (res) {
+                    this.groupList = res
+                    this.statistics.groupCount = this.groupList.length
+                }
+            } catch (error) {
+                console.error('获取群聊列表失败:', error)
+                this.$message.error('获取群聊列表失败')
+            }
+        },
+
+        async loadFileList() {
+            try {
+                const res = await this.$http.get('/file/list')
+                if (res) {
+                    this.statistics.fileCount = res.length
+                }
+            } catch (error) {
+                console.error('获取文件列表失败:', error)
+                this.$message.error('获取文件列表失败')
+            }
+        },
+
+        async updateStatistics() {
             try {
                 this.loading = true
-                const response = await this.$http.get('/admin/statistics')
-                if (response) {
-                    this.statistics = response
-                }
+                await Promise.all([
+                    this.loadUserList(),
+                    this.loadGroupList(),
+                    this.loadFileList()
+                ])
             } catch (error) {
                 console.error('获取统计数据失败:', error)
                 this.$message.error('获取统计数据失败')
@@ -68,7 +132,15 @@ export default {
         }
     },
     mounted() {
-        this.fetchStatistics()
+        this.updateStatistics()
+        this.timer = setInterval(() => {
+            this.updateStatistics()
+        }, 60000)
+    },
+    beforeDestroy() {
+        if (this.timer) {
+            clearInterval(this.timer)
+        }
     }
 }
 </script>
