@@ -434,7 +434,7 @@ export default {
     --icon-font-size: 22px;
     --width: 60px;
     width: var(--width);
-    background: var(--im-color-primary-light-1);
+    background: #000000;
     padding-top: 20px;
 
     .navi-bar-box {
@@ -467,16 +467,16 @@ export default {
 
       .router-link-active .menu-item {
         color: #fff;
-        background: var(--im-color-primary-light-2);
+        background: rgba(255, 255, 255, 0.1);
       }
 
       .link:not(.router-link-active) .menu-item:hover {
-        color: var(--im-color-primary-light-7);
+        color: #ffffff;
       }
 
       .menu-item {
         position: relative;
-        color: var(--im-color-primary-light-4);
+        color: rgba(255, 255, 255, 0.7);
         width: var(--width);
         height: 46px;
         display: flex;
@@ -511,7 +511,7 @@ export default {
       height: 50px;
       width: 100%;
       cursor: pointer;
-      color: var(--im-color-primary-light-4);
+      color: rgba(255, 255, 255, 0.7);
       font-size: var(--icon-font-size);
 
       .icon {
@@ -520,7 +520,7 @@ export default {
 
       &:hover {
         font-weight: 600;
-        color: var(--im-color-primary-light-7);
+        color: #ffffff;
       }
     }
   }
