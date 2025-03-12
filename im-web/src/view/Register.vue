@@ -128,7 +128,18 @@ export default {
 	align-items: center;
 	width: 100%;
 	height: 100%;
-	background: rgb(232, 242, 255);
+	background: #E8F2FF url('../../public/logo.png') no-repeat center center fixed;
+	background-size: cover;
+
+	&::before {
+		content: '';
+		position: absolute;
+		top: 0;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		background: rgba(255, 255, 255, 0.3);
+	}
 
 	.web-ruleForm {
 		width: 500px;
