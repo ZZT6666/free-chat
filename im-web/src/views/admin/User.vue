@@ -20,7 +20,18 @@
             <el-table-column prop="id" label="id" width="80" fixed></el-table-column>
             <el-table-column prop="userName" label="用户名" width="120" fixed></el-table-column>
             <el-table-column prop="nickName" label="昵称" width="120"></el-table-column>
-            <el-table-column prop="head_image" label="用户头像" width="120"></el-table-column>
+            <el-table-column prop="headImageThumb" label="用户头像" width="120">
+                <template #default="scope">
+                    <el-avatar 
+                        :size="40" 
+                        :src="scope.row.headImage"
+                        :alt="scope.row.userName"
+                    >
+                        <!-- 当头像加载失败时显示用户名首字母 -->
+                        {{ scope.row.userName ? scope.row.userName.charAt(0).toUpperCase() : 'U' }}
+                    </el-avatar>
+                </template>
+            </el-table-column>
             <el-table-column prop="sex" label="性别" width="80">
                 <template #default="scope">
                     {{ scope.row.sex === 0 ? '男' : '女' }}
@@ -43,7 +54,7 @@
             <el-table-column fixed="right" label="操作" width="200">
                 <template #default="scope">
                     <div class="operation-buttons">
-                        <el-button size="small" type="text">详情</el-button>
+                        <el-button size="small" type="text" @click="handleDetail(scope.row)">详情</el-button>
                         <el-divider direction="vertical"></el-divider>
                         <template v-if="canEdit(scope.row)">
                             <el-button size="small" type="text" @click="handleEdit(scope.row)">编辑</el-button>
@@ -132,12 +143,43 @@
                 <el-button type="primary" @click="submitPasswordForm">确 定</el-button>
             </div>
         </el-dialog>
+
+        <!-- 添加用户详情对话框 -->
+        <el-dialog title="用户详情" :visible.sync="detailDialogVisible" width="500px">
+            <el-descriptions :column="1" border>
+                <el-descriptions-item label="用户头像">
+                    <el-avatar 
+                        :size="80" 
+                        :src="detailForm.headImage"
+                        :alt="detailForm.userName"
+                    >
+                        {{ detailForm.userName ? detailForm.userName.charAt(0).toUpperCase() : 'U' }}
+                    </el-avatar>
+                </el-descriptions-item>
+                <el-descriptions-item label="用户ID">{{ detailForm.id }}</el-descriptions-item>
+                <el-descriptions-item label="用户名">{{ detailForm.userName }}</el-descriptions-item>
+                <el-descriptions-item label="昵称">{{ detailForm.nickName }}</el-descriptions-item>
+                <el-descriptions-item label="性别">{{ detailForm.sex === 0 ? '男' : '女' }}</el-descriptions-item>
+                <el-descriptions-item label="角色">
+                    {{ detailForm.type === 0 ? '超级管理员' : (detailForm.type === 1 ? '普通用户' : '管理员') }}
+                </el-descriptions-item>
+                <el-descriptions-item label="状态">
+                    <el-tag :type="detailForm.isBanned ? 'danger' : 'success'">
+                        {{ detailForm.isBanned === 0 ? '正常' : '封禁' }}
+                    </el-tag>
+                </el-descriptions-item>
+                <el-descriptions-item label="注册时间">{{ detailForm.createdTime }}</el-descriptions-item>
+                <el-descriptions-item label="最后登录时间">{{ detailForm.lastLoginTime }}</el-descriptions-item>
+            </el-descriptions>
+            <div slot="footer" class="dialog-footer">
+                <el-button @click="detailDialogVisible = false">关 闭</el-button>
+            </div>
+        </el-dialog>
     </div>
 </template>
 
 <script>
 import dayjs from 'dayjs'
-
 export default {
     name: 'AdminUser',
     data() {
@@ -211,7 +253,18 @@ export default {
                     { required: true, message: '请再次输入新密码', trigger: 'blur' },
                     { validator: validateConfirmPassword, trigger: 'blur' }
                 ]
-            }
+            },
+            detailDialogVisible: false,
+            detailForm: {
+                id: '',
+                userName: '',
+                nickName: '',
+                sex: 0,
+                type: 1,
+                isBanned: 0,
+                createdTime: '',
+                lastLoginTime: ''
+            },
         }
     },
     methods: {
@@ -406,7 +459,13 @@ export default {
                     }
                 }
             })
-        }
+        },
+
+        // 显示用户详情
+        handleDetail(row) {
+            this.detailForm = { ...row }
+            this.detailDialogVisible = true
+        },
     },
     async mounted() {
         await this.getCurrentUser() // 先获取当前用户信息
