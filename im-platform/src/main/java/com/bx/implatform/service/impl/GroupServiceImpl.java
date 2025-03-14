@@ -85,6 +85,13 @@ public class GroupServiceImpl extends ServiceImpl<GroupMapper, Group> implements
         Group group = BeanUtils.copyProperties(vo, Group.class);
         if (group != null) {
             group.setOwnerId(user.getId());
+            if(user.getSex() == 0){
+                group.setHeadImage(Constant.group1);
+                group.setHeadImageThumb(Constant.group1);
+            }else {
+                group.setHeadImage(Constant.group2);
+                group.setHeadImageThumb(Constant.group2);
+            }
         }
         this.save(group);
         log.info("创建群聊，群聊id:{},群聊名称:{}", group.getId(), group.getName());

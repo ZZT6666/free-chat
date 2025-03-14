@@ -19,4 +19,13 @@ public final class Constant {
      */
     public static final Long MAX_GROUP_MEMBER = 500L;
 
+    /**
+     * 群聊默认图片
+     */
+    public static final String group1 = "http://127.0.0.1:9000/free-chat/static/group1.png";
+    public static final String group2 = "http://127.0.0.1:9000/free-chat/static/group2.png";
+    /**
+     * 用户默认图片
+     */
+    public static final String user = "http://127.0.0.1:9000/free-chat/static/user.png";
 }

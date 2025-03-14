@@ -33,7 +33,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
+import com.bx.implatform.contant.Constant;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -117,6 +117,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         }
         user = BeanUtils.copyProperties(dto, User.class);
         user.setPassword(passwordEncoder.encode(user.getPassword()));
+        user.setHeadImage(Constant.user);
+        user.setHeadImageThumb(Constant.user);
         this.save(user);
         log.info("注册用户，用户id:{},用户名:{},昵称:{}", user.getId(), dto.getUserName(), dto.getNickName());
     }
