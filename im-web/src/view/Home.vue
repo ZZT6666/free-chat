@@ -27,6 +27,11 @@
                   <span class="icon iconfont icon-group" style="font-size: 28px"></span>
                 </div>
               </router-link>
+              <router-link class="link" v-bind:to="'/home/file'">
+                <div class="menu-item">
+                  <span class="el-icon-folder" style="font-size: 28px"></span>
+                </div>
+              </router-link>
             </div>
           </div>
 
@@ -454,7 +459,7 @@ export default {
     }
 
     .menu {
-      height: 200px;
+      height: 240px;
       //margin-top: 10px;
       display: flex;
       flex-direction: column;

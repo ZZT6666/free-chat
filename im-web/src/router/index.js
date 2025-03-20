@@ -48,6 +48,11 @@ export default new VueRouter({
         name: "GROUP",
         path: "/home/group",
         component: () => import("../view/Group"),
+      },
+      {
+        name:"File",
+        path: "/home/file",
+        component: () => import("../view/File"),
       }
     ]
   },
