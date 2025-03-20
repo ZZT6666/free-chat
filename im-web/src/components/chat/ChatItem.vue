@@ -8,8 +8,8 @@
 		<div class="chat-right">
 			<div class="chat-name">
 				<div class="chat-name-text">
+          <el-tag v-if="chat.type == 'GROUP'" effect="dark">群聊</el-tag>
 					<div>{{ chat.showName }}</div>
-					<el-tag v-if="chat.type == 'GROUP'" size="mini" effect="dark">群</el-tag>
 				</div>
 				<div class="chat-time-text">{{ showTime }}</div>
 			</div>
@@ -171,7 +171,7 @@ export default {
 				.el-tag {
 					min-width: 22px;
 					text-align: center;
-					background-color: #2830d3;
+					background-color: #409EFF;
 					border-radius: 10px;
 					border: 0;
 					height: 16px;
