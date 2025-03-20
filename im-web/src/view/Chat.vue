@@ -6,12 +6,18 @@
           <i class="el-icon-search el-input__icon" slot="prefix"> </i>
         </el-input>
       </div>
+      <div>
+        <el-button class="chat-list-btn" :class="{'active-btn': activeTab === 'all'}" @click="activeTab = 'all'"
+                   type="success">所有</el-button>
+        <el-button class="chat-list-btn" :class="{'active-btn': activeTab === 'unread'}" @click="activeTab = 'unread'"
+                   type="success">未读</el-button>
+      </div>
       <div class="chat-list-loading" v-if="loading" v-loading="true" element-loading-text="消息接收中..."
         element-loading-spinner="el-icon-loading" element-loading-background="#F9F9F9" element-loading-size="24">
       </div>
       <el-scrollbar class="chat-list-items" v-else>
         <div v-for="(chat, index) in chatStore.chats" :key="index">
-          <chat-item v-show="!chat.delete && chat.showName.includes(searchText)" :chat="chat" :index="index"
+          <chat-item v-show="!chat.delete && chat.showName.includes(searchText) && (activeTab === 'all' || (activeTab === 'unread' && chat.unreadCount!== 0))" :chat="chat" :index="index"
             @click.native="onActiveItem(index)" @delete="onDelItem(index)" @top="onTop(index)"
             :active="chat === chatStore.activeChat"></chat-item>
         </div>
@@ -35,6 +41,7 @@ export default {
   },
   data() {
     return {
+      activeTab: 'all', // 默认激活的是“所有”按钮
       searchText: "",
       messageContent: "",
       group: {},
@@ -76,7 +83,18 @@ export default {
       align-items: center;
       padding: 0 8px;
     }
-
+    .chat-list-btn {
+      background-color: transparent; /* 默认背景透明 */
+      border-radius: 20px; /* 圆角边框 */
+      border: 1px solid rgba(64, 158, 255, 0); /* 边框颜色 */
+      margin-right: 10px; /* 按钮间距 */
+      color: inherit; /* 保持字体颜色不变 */
+      position: relative; /* 为高亮效果做准备 */
+    }
+    .active-btn {
+      background-color: #409EFF; /* 设置点击后的高亮颜色 */
+      color: white; /* 字体颜色不变 */
+    }
     .chat-list-loading {
       height: 50px;
       background-color: #eee;
