@@ -15,6 +15,7 @@ import com.bx.implatform.service.WebrtcGroupService;
 import com.bx.implatform.session.SessionContext;
 import com.bx.implatform.session.UserSession;
 import com.bx.implatform.session.WebrtcGroupSession;
+import com.bx.implatform.session.WebrtcUserInfo;
 import com.bx.implatform.util.BeanUtils;
 import com.bx.implatform.util.UserStateUtils;
 import com.bx.implatform.vo.GroupMessageVO;
@@ -25,6 +26,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -47,20 +49,17 @@ public class WebrtcGroupServiceImpl implements WebrtcGroupService {
 
         // 创建群组会话
         WebrtcGroupSession groupSession = new WebrtcGroupSession();
-        groupSession.setGroupId(dto.getGroupId());
-        groupSession.setCreatorId(session.getUserId());
-        groupSession.setCreateTime(System.currentTimeMillis());
-        groupSession.setParticipants(new HashMap<>());
-
-        // 初始化参与者
-        dto.getUserInfos().forEach(user -> {
-            verifyGroupMember(dto.getGroupId(), user.getUserId());
-            groupSession.getParticipants().put(user.getUserId(),
-                    new WebrtcGroupSession.Participant(user.getUserId(), user.getTerminal()));
-        });
+        // 发起者
+        groupSession.setHost(getSessionUserInfo(session));
+        // 被邀请用户列表
+        groupSession.setUserInfos(dto.getUserInfos());
+        // 已经加入聊天的用户列表
+        List<IMUserInfo> inChatUsers = new ArrayList<>();
+        inChatUsers.add(getSessionUserInfo(session));
+        groupSession.setInChatUsers(inChatUsers);
 
         // 保存会话
-        saveGroupSession(groupSession);
+        saveGroupSession(groupSession,dto.getGroupId());
 
         // 发送群组通话邀请
         sendGroupCallMessage(dto.getGroupId(), session, dto.getUserInfos());
@@ -72,7 +71,8 @@ public class WebrtcGroupServiceImpl implements WebrtcGroupService {
         log.info("接受群组通话,groupId:{},uid:{}", groupId, session.getUserId());
 
         WebrtcGroupSession groupSession = getGroupSession(groupId);
-        updateParticipantStatus(groupSession, session.getUserId(), true);
+        //更新通话中用户列表
+        updateInChatUsers(groupSession, getSessionUserInfo(session), groupId);
 
         // 广播接受通知
         broadcastGroupMessage(groupId, MessageType.RTC_GROUP_ACCEPT, "已加入通话");
@@ -84,7 +84,8 @@ public class WebrtcGroupServiceImpl implements WebrtcGroupService {
         log.info("拒绝群组通话,groupId:{},uid:{}", groupId, session.getUserId());
 
         WebrtcGroupSession groupSession = getGroupSession(groupId);
-        updateParticipantStatus(groupSession, session.getUserId(), false);
+        //更新通话中用户列表
+        updateInChatUsers(groupSession, getSessionUserInfo(session), groupId);
 
         // 广播拒绝通知
         broadcastGroupMessage(groupId, MessageType.RTC_GROUP_REJECT, "已拒绝加入");
@@ -99,7 +100,7 @@ public class WebrtcGroupServiceImpl implements WebrtcGroupService {
         saveSystemMessage(dto.getGroupId(), "通话失败：" + dto.getReason());
 
         // 广播失败通知
-        broadcastGroupMessage(dto.getGroupId(), MessageType.RTC_GROUP_FAILED, dto);
+        broadcastGroupMessage(dto.getGroupId(), MessageType.RTC_GROUP_FAILED, dto.getReason());
     }
 
     @Override
@@ -108,10 +109,10 @@ public class WebrtcGroupServiceImpl implements WebrtcGroupService {
         log.info("加入群组通话,groupId:{},uid:{}", dto.getGroupId(), session.getUserId());
 
         WebrtcGroupSession groupSession = getGroupSession(dto.getGroupId());
-        groupSession.getParticipants().put(session.getUserId(),
-                new WebrtcGroupSession.Participant(session.getUserId(), session.getTerminal()));
 
-        saveGroupSession(groupSession);
+        //更新通话中用户列表
+        updateInChatUsers(groupSession, getSessionUserInfo(session), dto.getGroupId());
+
         broadcastGroupMessage(dto.getGroupId(), MessageType.RTC_GROUP_JOIN, "已加入房间");
     }
 
@@ -121,13 +122,9 @@ public class WebrtcGroupServiceImpl implements WebrtcGroupService {
         log.info("邀请加入群组通话,groupId:{},uid:{}", dto.getGroupId(), session.getUserId());
 
         WebrtcGroupSession groupSession = getGroupSession(dto.getGroupId());
-        dto.getUserInfos().forEach(user -> {
-            verifyGroupMember(dto.getGroupId(), user.getUserId());
-            groupSession.getParticipants().putIfAbsent(user.getUserId(),
-                    new WebrtcGroupSession.Participant(user.getUserId(), user.getTerminal()));
-        });
+        groupSession.getUserInfos().addAll(dto.getUserInfos());
 
-        saveGroupSession(groupSession);
+        saveGroupSession(groupSession,dto.getGroupId());
         sendGroupCallMessage(dto.getGroupId(), session, dto.getUserInfos());
     }
 
@@ -152,14 +149,15 @@ public class WebrtcGroupServiceImpl implements WebrtcGroupService {
         log.info("退出群组通话,groupId:{},uid:{}", groupId, session.getUserId());
 
         WebrtcGroupSession groupSession = getGroupSession(groupId);
-        groupSession.getParticipants().remove(session.getUserId());
+        List<IMUserInfo> inChatUsers = groupSession.getInChatUsers();
+        inChatUsers.remove(getSessionUserInfo(session));
+        groupSession.setInChatUsers(inChatUsers);
 
-        if (!groupSession.getParticipants().isEmpty()) {
-            saveGroupSession(groupSession);
+        if (groupSession.getInChatUsers().size() >= 2) {
+            saveGroupSession(groupSession,groupId);
             broadcastGroupMessage(groupId, MessageType.RTC_GROUP_QUIT, "已退出通话");
         } else {
             deleteGroupSession(groupId);
-            broadcastGroupMessage(groupId, MessageType.RTC_GROUP_END, "通话已结束");
         }
     }
 
@@ -172,15 +170,25 @@ public class WebrtcGroupServiceImpl implements WebrtcGroupService {
 
     @Override
     public void device(WebrtcGroupDeviceDTO dto) {
-        broadcastGroupMessage(dto.getGroupId(), MessageType.RTC_GROUP_DEVICE, dto);
+        broadcastGroupMessage(dto.getGroupId(), MessageType.RTC_GROUP_DEVICE, String.valueOf(dto));
     }
 
     @Override
     public void heartbeat(Long groupId) {
+        // 会话续命
         String key = getGroupSessionKey(groupId);
         redisTemplate.expire(key, 60, TimeUnit.SECONDS);
+        // 用户状态续命
+        UserSession session = SessionContext.getSession();
+        userStateUtils.expire(session.getUserId());
     }
-
+    private IMUserInfo getSessionUserInfo(UserSession session) {
+        //获取当前用户信息
+        IMUserInfo user = new IMUserInfo();
+        user.setId(session.getUserId());
+        user.setTerminal(session.getTerminal());
+        return user;
+    }
     private void verifyGroupMember(Long groupId, Long userId) {
         if (!groupMemberService.isInGroup(groupId, Collections.singletonList(userId))) {
             throw new GlobalException("用户不在群组中");
@@ -196,8 +204,8 @@ public class WebrtcGroupServiceImpl implements WebrtcGroupService {
         return session;
     }
 
-    private void saveGroupSession(WebrtcGroupSession session) {
-        String key = getGroupSessionKey(session.getGroupId());
+    private void saveGroupSession(WebrtcGroupSession session,Long groupId) {
+        String key = getGroupSessionKey(groupId);
         redisTemplate.opsForValue().set(key, session, 60, TimeUnit.SECONDS);
     }
 
@@ -211,38 +219,40 @@ public class WebrtcGroupServiceImpl implements WebrtcGroupService {
 
     private void sendGroupCallMessage(Long groupId, UserSession sender, List<WebrtcUserInfo> targets) {
         GroupMessageVO messageInfo = new GroupMessageVO();
-        messageInfo.setType(MessageType.RTC_GROUP_CALL.code());
+        messageInfo.setType(MessageType.RTC_GROUP_INVITE.code());
         messageInfo.setGroupId(groupId);
         messageInfo.setSendId(sender.getUserId());
         messageInfo.setContent("视频通话邀请");
 
         IMGroupMessage<GroupMessageVO> message = new IMGroupMessage<>();
-        message.setSender(new IMUserInfo(sender.getUserId(), sender.getTerminal()));
-        message.setGroupId(groupId);
-        message.setData(messageInfo);
+        //发送者
+        message.setSender(getSessionUserInfo(sender));
+        //接收者
+        List<Long> members = targets.stream().map(WebrtcUserInfo::getId).collect(Collectors.toList());
+        message.setRecvIds(members);
 
-        Set<Integer> terminals = new HashSet<>();
-        targets.forEach(user -> terminals.add(user.getTerminal()));
-        message.setRecvTerminals(new ArrayList<>(terminals));
+        message.setData(messageInfo);
 
         imClient.sendGroupMessage(message);
     }
 
-    private void broadcastGroupMessage(Long groupId, MessageType type, Object content) {
+    private void broadcastGroupMessage(Long groupId, MessageType type, String content) {
         GroupMessageVO messageInfo = new GroupMessageVO();
         messageInfo.setType(type.code());
         messageInfo.setGroupId(groupId);
         messageInfo.setContent(content);
 
         IMGroupMessage<GroupMessageVO> message = new IMGroupMessage<>();
-        message.setGroupId(groupId);
+        //接收者
+        List<Long> members = groupMemberService.findUserIdsByGroupId(groupId);
+        message.setRecvIds(members);
+
         message.setData(messageInfo);
         imClient.sendGroupMessage(message);
     }
 
     private void sendTargetMessage(Long groupId, Long targetUid, MessageType type, String content) {
         UserSession session = SessionContext.getSession();
-        WebrtcGroupSession groupSession = getGroupSession(groupId);
 
         GroupMessageVO messageInfo = new GroupMessageVO();
         messageInfo.setType(type.code());
@@ -251,23 +261,20 @@ public class WebrtcGroupServiceImpl implements WebrtcGroupService {
         messageInfo.setContent(content);
 
         IMGroupMessage<GroupMessageVO> message = new IMGroupMessage<>();
-        message.setSender(new IMUserInfo(session.getUserId(), session.getTerminal()));
-        message.setGroupId(groupId);
-        message.setData(messageInfo);
+        message.setSender(getSessionUserInfo(session));
+        //接收者
+        message.setRecvIds(Collections.singletonList(targetUid));
 
-        WebrtcGroupSession.Participant participant = groupSession.getParticipants().get(targetUid);
-        if (participant != null) {
-            message.setRecvTerminals(Collections.singletonList(participant.getTerminal()));
-        }
+        message.setData(messageInfo);
 
         imClient.sendGroupMessage(message);
     }
 
-    private void updateParticipantStatus(WebrtcGroupSession session, Long userId, boolean accepted) {
-        WebrtcGroupSession.Participant participant = session.getParticipants().get(userId);
-        if (participant != null) {
-            participant.setAccepted(accepted);
-            saveGroupSession(session);
+    private void updateInChatUsers(WebrtcGroupSession session, IMUserInfo user, Long groupId) {
+        List<IMUserInfo> inChatUsers = session.getInChatUsers();
+        if (inChatUsers != null) {
+            inChatUsers.add(user);
+            saveGroupSession(session,groupId);
         }
     }
 
