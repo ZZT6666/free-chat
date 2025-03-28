@@ -55,7 +55,7 @@ export default {
 			this.groupId = rtcInfo.groupId;
 			this.members = rtcInfo.userInfos;
 			this.isHost = rtcInfo.isHost;
-			
+
 			if (this.isHost) {
 				this.setupCall();
 			}
@@ -66,11 +66,11 @@ export default {
 				this.close();
 				return;
 			}
-			
+
 			try {
 				// 打开麦克风
 				this.localStream = await this.camera.openAudio();
-				
+
 				// 初始化所有成员的WebRTC连接
 				for (let member of this.members) {
 					if (member.userId !== this.$store.state.userStore.userId) {
@@ -82,7 +82,7 @@ export default {
 				await this.API.setup(this.groupId, this.members);
 				this.state = 'WAITING';
 				this.startHeartBeat();
-				
+
 			} catch (error) {
 				console.error('Setup call failed:', error);
 				this.close();
@@ -114,7 +114,7 @@ export default {
 			if (this.state === 'CLOSE' && msg.type !== this.$enums.MESSAGE_TYPE.RTC_GROUP_INVITE) {
 				return;
 			}
-			
+
 			switch (msg.type) {
 				case this.$enums.MESSAGE_TYPE.RTC_GROUP_INVITE:
 					this.handleSetup(msg);
@@ -163,28 +163,36 @@ export default {
 		},
 
 		async handleSetup(msg) {
-			const host = await this.$http({
-                    url: `/user/find/${msg.senderId}`,
-                    method: 'get'
-                })
-			const res = await this.$http({
-                    url: '/user/self',
-                    method: 'get'
-                })
-			console.log('host', host);
-			console.log('res', res);
-			let rtcInfo = {
-					host: host,
-					userInfos: res
-				}
+
 			if (!msg.selfSend) {
 				console.log('非发起人，显示加入对话框');
 				// 非发起人，显示加入对话框
-				
+        await this.$http({
+          url: `/user/find/${msg.sendId}`,
+          method: 'get'
+        }).then((user) => {
+          this.host = user
+        })
+
+        await this.$http({
+          url: '/user/self',
+          method: 'get'
+        }).then((user) => {
+          this.user = [user]
+        })
+
+        console.log('host', this.host);
+        console.log('res', this.user);
+        let rtcInfo = {
+          host: this.host,
+          userInfos: this.user,
+          groupId: msg.groupId,
+        }
+
 				this.$eventBus.$emit('showGroupJoin', rtcInfo);
-				return;
+
 			}
-			
+
 			// // 发起人逻辑
 			// const userId = msg.fromUserId;
 			// const pc = this.peerConnections.get(userId);
