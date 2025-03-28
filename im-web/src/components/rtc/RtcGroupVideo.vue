@@ -167,34 +167,34 @@ export default {
 			if (!msg.selfSend) {
 				console.log('非发起人，显示加入对话框');
 				// 非发起人，显示加入对话框
-        await this.$http({
-          url: `/user/find/${msg.sendId}`,
-          method: 'get'
-        }).then((user) => {
-          this.host = user
-        })
+				await this.$http({
+				url: `/user/find/${msg.sendId}`,
+				method: 'get'
+				}).then((user) => {
+				this.host = user
+				})
 
-        await this.$http({
-          url: '/user/self',
-          method: 'get'
-        }).then((user) => {
-          this.user = [user]
-        })
+				await this.$http({
+				url: '/user/self',
+				method: 'get'
+				}).then((user) => {
+				this.user = [user]
+				})
 
-        console.log('host', this.host);
-        console.log('res', this.user);
-        let rtcInfo = {
-          host: this.host,
-          userInfos: this.user,
-          groupId: msg.groupId,
-        }
+				console.log('host', this.host);
+				console.log('res', this.user);
+				let rtcInfo = {
+				host: this.host,
+				userInfos: this.user,
+				groupId: msg.groupId,
+				}
 
 				this.$eventBus.$emit('showGroupJoin', rtcInfo);
 
 			}
 
 			// // 发起人逻辑
-			// const userId = msg.fromUserId;
+			// const userId = msg.sendId;
 			// const pc = this.peerConnections.get(userId);
 			// if (!pc) return;
 
