@@ -61,6 +61,7 @@
         @close="$store.commit('closeFullImageBox')"></full-image>
       <rtc-private-video ref="rtcPrivateVideo"></rtc-private-video>
       <rtc-group-video ref="rtcGroupVideo"></rtc-group-video>
+      <rtc-group-join ref="rtcGroupJoin"></rtc-group-join>
     </div>
   </div>
 </template>
@@ -73,6 +74,7 @@ import FullImage from '../components/common/FullImage.vue';
 import RtcPrivateVideo from '../components/rtc/RtcPrivateVideo.vue';
 import RtcPrivateAcceptor from '../components/rtc/RtcPrivateAcceptor.vue';
 import RtcGroupVideo from '../components/rtc/RtcGroupVideo.vue';
+import RtcGroupJoin from '../components/rtc/RtcGroupJoin.vue';
 
 export default {
   components: {
@@ -82,7 +84,8 @@ export default {
     FullImage,
     RtcPrivateVideo,
     RtcPrivateAcceptor,
-    RtcGroupVideo
+    RtcGroupVideo,
+    RtcGroupJoin
   },
   data() {
     return {
@@ -97,6 +100,10 @@ export default {
       this.$eventBus.$on('openPrivateVideo', (rctInfo) => {
         // 进入单人视频通话
         this.$refs.rtcPrivateVideo.open(rctInfo);
+      });
+      this.$eventBus.$on('showGroupJoin', (rtcInfo) => {
+        // 显示加入群组通话对话框
+        this.$refs.rtcGroupJoin.open(rtcInfo);
       });
       this.$eventBus.$on('openGroupVideo', (rctInfo) => {
         // 进入多人视频通话
