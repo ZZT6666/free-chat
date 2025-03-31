@@ -2,6 +2,7 @@ package com.bx.implatform.controller;
 
 import com.bx.implatform.dto.AdminModifyPwdDTO;
 import com.bx.implatform.dto.ModifyPwdDTO;
+import com.bx.implatform.dto.UpdataPwdDTO;
 import com.bx.implatform.entity.User;
 import com.bx.implatform.result.Result;
 import com.bx.implatform.result.ResultUtils;
@@ -72,6 +73,12 @@ public class UserController {
     @Operation(summary = "修改密码", description = "修改用户密码")
     public Result modifyPassword(@Valid @RequestBody AdminModifyPwdDTO dto) {
         userService.adminModifyPassword(dto);
+        return ResultUtils.success();
+    }
+    @PutMapping("/updatePwd")
+    @Operation(summary = "修改密码", description = "修改用户密码")
+    public Result updatePassword(@Valid @RequestBody UpdataPwdDTO dto) {
+        userService.updataPassword(dto);
         return ResultUtils.success();
     }
 }

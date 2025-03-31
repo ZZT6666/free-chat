@@ -39,10 +39,10 @@
             <div class="botoom-item" @click="isFullscreen = !isFullscreen">
               <i class="el-icon-full-screen"></i>
             </div>
-            <div class="botoom-item" @click="showSetting">
+            <div class="botoom-item" @click="showUserSetting">
               <span class="icon iconfont icon-setting" style="font-size: 20px"></span>
             </div>
-            <div class="botoom-item" @click="goToAdmin" title="管理系统">
+            <div class="botoom-item" v-if="isAdmin" @click="goToAdmin" title="管理系统">
               <i class="el-icon-s-tools"></i>
             </div>
             <div class="botoom-item" @click="onExit()" title="退出">
@@ -55,6 +55,7 @@
         <router-view></router-view>
       </div>
       <setting :visible="showSettingDialog" @close="closeSetting()"></setting>
+      <user-setting :visible="showUserSettingDialog" @close="closeUserSetting()"></user-setting>
       <user-info v-show="uiStore.userInfo.show" :pos="uiStore.userInfo.pos" :user="uiStore.userInfo.user"
         @close="$store.commit('closeUserInfoBox')"></user-info>
       <full-image :visible="uiStore.fullImage.show" :url="uiStore.fullImage.url"
@@ -69,6 +70,7 @@
 <script>
 import HeadImage from '../components/common/HeadImage.vue';
 import Setting from '../components/setting/Setting.vue';
+import UserSetting from '../components/setting/UserSetting.vue';
 import UserInfo from '../components/common/UserInfo.vue';
 import FullImage from '../components/common/FullImage.vue';
 import RtcPrivateVideo from '../components/rtc/RtcPrivateVideo.vue';
@@ -85,12 +87,14 @@ export default {
     RtcPrivateVideo,
     RtcPrivateAcceptor,
     RtcGroupVideo,
-    RtcGroupJoin
+    RtcGroupJoin,
+    UserSetting
   },
   data() {
     return {
       showCommonSettingDialog: false,
       showSettingDialog: false,
+      showUserSettingDialog: false,
       lastPlayAudioTime: new Date().getTime() - 1000,
       isFullscreen: true
     }
@@ -324,6 +328,12 @@ export default {
     closeSetting() {
       this.showSettingDialog = false;
     },
+    showUserSetting() {
+      this.showUserSettingDialog = true;
+    },
+    closeUserSetting() {
+      this.showUserSettingDialog = false;
+    },
     showCommonSetting() {
       this.showSettingDialog = true;
     },
@@ -379,6 +389,9 @@ export default {
         }
       });
       return unreadCount;
+    },
+    isAdmin() {
+      return this.$store.state.userStore.userInfo.id === 1;
     }
   },
   watch: {

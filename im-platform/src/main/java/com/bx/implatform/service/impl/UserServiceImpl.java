@@ -9,10 +9,7 @@ import com.bx.imclient.IMClient;
 import com.bx.imcommon.enums.IMTerminalType;
 import com.bx.imcommon.util.JwtUtil;
 import com.bx.implatform.config.props.JwtProperties;
-import com.bx.implatform.dto.AdminModifyPwdDTO;
-import com.bx.implatform.dto.LoginDTO;
-import com.bx.implatform.dto.ModifyPwdDTO;
-import com.bx.implatform.dto.RegisterDTO;
+import com.bx.implatform.dto.*;
 import com.bx.implatform.entity.Friend;
 import com.bx.implatform.entity.GroupMember;
 import com.bx.implatform.entity.User;
@@ -138,6 +135,15 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     public void adminModifyPassword(AdminModifyPwdDTO dto) {
         User user = this.getById(dto.getId());
         user.setPassword(passwordEncoder.encode(dto.getNewPassword()));
+        this.updateById(user);
+        log.info("用户修改密码，用户id:{},用户名:{},昵称:{}", user.getId(), user.getUserName(), user.getNickName());
+    }
+    @Override
+    public void updataPassword(UpdataPwdDTO dto) {
+        User user = this.getById(dto.getId());
+        if(dto.getOldPassword().equals(user.getPassword())) {
+            user.setPassword(passwordEncoder.encode(dto.getNewPassword()));
+        }
         this.updateById(user);
         log.info("用户修改密码，用户id:{},用户名:{},昵称:{}", user.getId(), user.getUserName(), user.getNickName());
     }
