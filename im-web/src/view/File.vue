@@ -44,9 +44,9 @@
 
     <el-table :data="filteredMessages" stripe style="width: 100%;border: solid 1px #e3e3e3;"
               :height="'calc(100vh - 200px)'" :header-cell-style="{ 'background-color': '#f5f7fa', 'color': '#909399' }"
-              v-loading="loading" class="small-font-table" :scrollbar-always-on="true">
-      <el-table-column prop="id" label="id" width="96" sortable fixed></el-table-column>
-      <el-table-column prop="content" label="内容" width="280" show-overflow-tooltip>
+              v-loading="loading" class="small-font-table" :scrollbar-always-on="true" auto-new-columns fit>
+      <el-table-column prop="id" label="id" min-width="80" sortable></el-table-column>
+      <el-table-column prop="content" label="内容" min-width="200" show-overflow-tooltip>
         <template #default="scope">
           <!-- 图片消息显示缩略图 -->
           <template v-if="scope.row.type === 1">
@@ -108,29 +108,44 @@
           </template>
         </template>
       </el-table-column>
-      <el-table-column prop="type" label="类型" width="90">
+      <el-table-column prop="type" label="类型" min-width="90">
         <template #default="scope">
           <el-tag :type="getTypeTag(scope.row.type)">
             {{ messageTypes[scope.row.type] || '提示消息' }}
           </el-tag>
         </template>
       </el-table-column>
-      <el-table-column prop="sendTime" label="发送时间" width="200" sortable></el-table-column>
-      <el-table-column prop="sendId" label="发送对象ID" width="180">
+      <el-table-column prop="sendTime" label="发送时间" min-width="160" sortable></el-table-column>
+      <el-table-column prop="sendId" label="发送对象" min-width="180">
         <template #default="scope">
-          <div style="display: flex; align-items: center;">
-            <span>{{scope.row.sendId }}</span>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <el-avatar :size="24" :src="userMap[scope.row.sendId]?.headImage"></el-avatar>
+            <div>
+              <div>{{ userMap[scope.row.sendId]?.userName || '加载中...' }}</div>
+            </div>
           </div>
         </template>
       </el-table-column>
-      <el-table-column prop="recvId" label="接收对象ID" width="180">
+      <el-table-column prop="recvId" label="接收对象" min-width="200">
         <template #default="scope">
-          <div style="display: flex; align-items: center;">
-            <span>{{  scope.row.recvId ||"群  "+ scope.row.groupId }}</span>
+          <div v-if="scope.row.chatType === 'group'" style="display: flex; align-items: center; gap: 8px;">
+            <el-tag effect="dark">群</el-tag>
+            <el-avatar :size="24" :src="groupMap[scope.row.groupId]?.headImage">
+              <i class="el-icon-s-home" style="font-size: 18px; color: #E6A23C;"></i>
+            </el-avatar>
+            <div>
+              <div>{{ groupMap[scope.row.groupId]?.name || '加载中...' }}</div>
+            </div>
+          </div>
+          <div v-else style="display: flex; align-items: center; gap: 8px;">
+            <el-avatar :size="24" :src="userMap[scope.row.recvId]?.headImage"></el-avatar>
+            <div>
+              <div>{{ userMap[scope.row.recvId]?.userName || '加载中...' }}</div>
+            </div>
           </div>
         </template>
       </el-table-column>
-      <el-table-column fixed="right" label="操作" width="250">
+      <el-table-column label="操作" min-width="120" fixed="right">
         <template #default="scope">
           <div class="operation-buttons">
             <el-button size="small" type="text" @click="handleBlock(scope.row)">转发</el-button>
@@ -187,7 +202,9 @@ export default {
       },
       blockDialogVisible: false,
       deleteDialogVisible: false,
-      currentMessage: null  // 当前操作的消息
+      currentMessage: null,  // 当前操作的消息
+      userMap: {}, // 存储用户信息的映射
+      groupMap: {} // 存储群组信息的映射
     }
   },
   methods: {
@@ -241,7 +258,8 @@ export default {
           this.loadPrivateMessages(),
           this.loadGroupMessages()
         ])
-        // 合并消息列表并格式化时间
+        
+        // 合并消息列表
         this.messages = [
           ...this.privateMessages.map(msg => ({
             ...msg,
@@ -254,6 +272,36 @@ export default {
             sendTime: msg.sendTime ? dayjs(msg.sendTime).format('YYYY-MM-DD HH:mm:ss') : ''
           }))
         ]
+
+        // 获取所有用户ID和群组ID
+        const userIds = new Set()
+        const groupIds = new Set()
+        
+        this.messages.forEach(msg => {
+          userIds.add(msg.sendId)
+          if (msg.chatType === 'private') {
+            userIds.add(msg.recvId)
+          } else {
+            groupIds.add(msg.groupId)
+          }
+        })
+
+        // 批量获取用户信息
+        const userRequests = Array.from(userIds).map(id => 
+          this.getUserInfo(id).then(user => {
+            if (user) this.$set(this.userMap, id, user)
+          })
+        )
+        
+        // 批量获取群组信息
+        const groupRequests = Array.from(groupIds).map(groupId => 
+          this.getGroupInfo(groupId).then(group => {
+            if (group) this.$set(this.groupMap, groupId, group)
+          })
+        )
+
+        await Promise.all([...userRequests, ...groupRequests])
+
       } catch (error) {
         console.error('获取消息列表失败:', error)
         this.$message.error('获取消息列表失败')
@@ -473,6 +521,18 @@ export default {
         return res
       } catch (error) {
         console.error('获取用户信息失败:', error)
+        return null
+      }
+    },
+    async getGroupInfo(groupId) {
+      try {
+        const res = await this.$http({
+          url: `/group/find/${groupId}`,
+          method: 'get'
+        })
+        return res
+      } catch (error) {
+        console.error('获取群组信息失败:', error)
         return null
       }
     }
@@ -705,6 +765,57 @@ export default {
 
     a {
       cursor: pointer;  // 添加鼠标手型
+    }
+  }
+
+  // 添加响应式处理
+  @media screen and (max-width: 768px) {
+    .operation-bar {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 10px;
+      
+      .filter-section {
+        flex-wrap: wrap;
+      }
+    }
+    
+    .small-font-table {
+      :deep(.el-table__body-wrapper) {
+        overflow-x: auto;
+      }
+      
+      // 小屏幕时调整最小宽度
+      :deep(th), :deep(td) {
+        min-width: 80px !important;
+      }
+      
+      // 操作列在小屏幕时换行显示
+      .operation-buttons {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 5px;
+        
+        .el-divider {
+          display: none;
+        }
+      }
+    }
+  }
+
+  // 添加内容换行处理
+  :deep(.el-table .cell) {
+    white-space: pre-line;  // 允许内容换行
+    word-break: break-word; // 长单词换行
+  }
+
+  // 调整文件内容显示
+  .file-content {
+    flex-wrap: wrap;
+    gap: 3px;
+    
+    i {
+      flex-shrink: 0; // 防止图标被压缩
     }
   }
 }
