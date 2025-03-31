@@ -105,8 +105,20 @@
                 </template>
             </el-table-column>
             <el-table-column prop="sendTime" label="发送时间" width="200" sortable></el-table-column>
-            <el-table-column prop="sender" label="发送对象" width="130"></el-table-column>
-            <el-table-column prop="receiver" label="接收对象" width="130"></el-table-column>
+            <el-table-column prop="sendId" label="发送对象ID" width="180">
+                <template #default="scope">
+                    <div style="display: flex; align-items: center;">
+                        <span>{{scope.row.sendId }}</span>
+                    </div>
+                </template>
+            </el-table-column>
+            <el-table-column prop="recvId" label="接收对象ID" width="180">
+                <template #default="scope">
+                    <div style="display: flex; align-items: center;">
+                        <span>{{  scope.row.recvId ||"群  "+ scope.row.groupId }}</span>
+                    </div>
+                </template>
+            </el-table-column>
             <el-table-column fixed="right" label="操作" width="160">
                 <template #default="scope">
                     <div class="operation-buttons">
@@ -457,6 +469,18 @@ export default {
                 document.body.appendChild(link)
                 link.click()
                 document.body.removeChild(link)
+            }
+        },
+        async getUserInfo(id) {
+            try {
+                const res = await this.$http({
+                    url: `/user/find/${id}`,
+                    method: 'get'
+                })
+                return res
+            } catch (error) {
+                console.error('获取用户信息失败:', error)
+                return null
             }
         }
     },
