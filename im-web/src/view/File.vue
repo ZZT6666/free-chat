@@ -1,126 +1,443 @@
 <template>
-  <div class="file-manager">
-    <div class="file-sidebar">
-      <div class="sidebar-item" :class="{ active: currentType === 'all' }" @click="filterByType('all')">
-        <i class="fas fa-folder"></i>
-        所有文件
+  <div class="admin-message">
+    <!-- 添加页面标题头部 -->
+    <div class="page-header">
+      <div class="title">
+        <i class="el-icon-chat-line-round"></i>
+        <span>消息管理器</span>
       </div>
-      <div class="sidebar-item" :class="{ active: currentType === 'document' }" @click="filterByType('document')">
-        <i class="fas fa-file-alt" style="color: #4285f4"></i>
-        文档
-      </div>
-      <div class="sidebar-item" :class="{ active: currentType === 'image' }" @click="filterByType('image')">
-        <i class="fas fa-file-image" style="color: #34a853"></i>
-        图片
-      </div>
-      <div class="sidebar-item" :class="{ active: currentType === 'audio' }" @click="filterByType('audio')">
-        <i class="fas fa-file-audio" style="color: #fbbc05"></i>
-        音频
-      </div>
-      <div class="sidebar-item" :class="{ active: currentType === 'video' }" @click="filterByType('video')">
-        <i class="fas fa-file-video" style="color: #ea4335"></i>
-        视频
-      </div>
-      <div class="sidebar-item" :class="{ active: currentType === 'other' }" @click="filterByType('other')">
-        <i class="fas fa-file" style="color: #666666"></i>
-        其他
+      <div class="description">
+        查看和管理消息记录
       </div>
     </div>
-    <div class="file-content">
-      <div class="file-grid">
-        <div v-for="file in filteredFiles" :key="file.fileName" class="file-item">
-          <!-- 图片类型显示缩略图 -->
-          <template v-if="getFileType(file.fileName).type === 'image'">
-            <div class="file-preview">
-              <el-image
-                  :src="file.url"
-                  :preview-src-list="[file.url]"
-                  fit="cover"
-                  class="preview-image"
+
+    <div class="operation-bar">
+      <div class="filter-section">
+        <el-radio-group v-model="contentType" size="small">
+          <el-radio-button label="all">全部</el-radio-button>
+          <el-radio-button label="text">文本</el-radio-button>
+          <el-radio-button label="image">图片</el-radio-button>
+          <el-radio-button label="audio">音频</el-radio-button>
+          <el-radio-button label="video">视频</el-radio-button>
+          <el-radio-button label="file">文件</el-radio-button>
+          <el-radio-button label="other">其他</el-radio-button>
+        </el-radio-group>
+        <el-divider direction="vertical"></el-divider>
+        <el-radio-group v-model="chatType" size="small">
+          <el-radio-button label="all">全部</el-radio-button>
+          <el-radio-button label="private">单聊</el-radio-button>
+          <el-radio-button label="group">群聊</el-radio-button>
+        </el-radio-group>
+      </div>
+      <div class="search-area">
+        <el-input v-model="searchKeyword" placeholder="请输入关键字搜索" size="small" clearable @clear="handleSearch"
+                  style="width: 200px; margin-right: 10px">
+          <template #suffix>
+            <i class="el-icon-search"></i>
+          </template>
+        </el-input>
+        <el-button type="primary" size="small" @click="handleSearch">
+          <i class="el-icon-search"></i> 搜索
+        </el-button>
+      </div>
+    </div>
+
+    <el-table :data="filteredMessages" stripe style="width: 100%;border: solid 1px #e3e3e3;"
+              :height="'calc(100vh - 200px)'" :header-cell-style="{ 'background-color': '#f5f7fa', 'color': '#909399' }"
+              v-loading="loading" class="small-font-table" :scrollbar-always-on="true">
+      <el-table-column prop="id" label="id" width="96" sortable fixed></el-table-column>
+      <el-table-column prop="content" label="内容" width="280" show-overflow-tooltip>
+        <template #default="scope">
+          <!-- 图片消息显示缩略图 -->
+          <template v-if="scope.row.type === 1">
+            <el-image
+                style="width: 50px; height: 50px; border-radius: 4px;"
+                :src="parseContent(scope.row.content).thumbUrl"
+                :preview-src-list="[parseContent(scope.row.content).originUrl]"
+                fit="cover"
+                :preview-teleported="true"
+            >
+              <template #error>
+                <div class="image-error">
+                  <i class="el-icon-picture-outline"></i>
+                </div>
+              </template>
+            </el-image>
+          </template>
+          <!-- 表情消息显示 -->
+          <template v-else-if="isEmojiMessage(scope.row.content)">
+            <div class="emoji-content">
+              <img
+                  :src="getEmojiUrl(scope.row.content)"
+                  :alt="getEmojiName(scope.row.content)"
+                  class="emoji-image"
+              />
+              <span>{{ getEmojiName(scope.row.content) }}</span>
+            </div>
+          </template>
+          <!-- 音频消息显示链接 -->
+          <template v-else-if="scope.row.type === 3">
+            <div class="audio-content">
+              <i class="el-icon-headset"></i>
+              <a :href="parseContent(scope.row.content).url" target="_blank">
+                音频文件 ({{ parseContent(scope.row.content).duration }}秒)
+              </a>
+            </div>
+          </template>
+          <!-- 文件消息显示链接 -->
+          <template v-else-if="scope.row.type === 2">
+            <div class="file-content">
+              <i
+                  :class="getFileIcon(getFileName(parseContent(scope.row.content).url)).icon"
+                  :style="{ color: getFileIcon(getFileName(parseContent(scope.row.content).url)).color }"
+              ></i>
+              <a
+                  href="javascript:;"
+                  @click="downloadFile(
+                                    parseContent(scope.row.content).url,
+                                    getFileName(parseContent(scope.row.content).url)
+                                )"
               >
-                <template #error>
-                  <div class="image-error">
-                    <i class="fas fa-file-image"></i>
-                  </div>
-                </template>
-              </el-image>
+                {{ getFileName(parseContent(scope.row.content).url) }}
+              </a>
             </div>
           </template>
-          <!-- 其他类型显示图标 -->
+          <!-- 其他类型消息显示文本内容 -->
           <template v-else>
-            <div class="file-icon" :style="{ color: getFileType(file.fileName).color }">
-              <i :class="getFileType(file.fileName).icon"></i>
-            </div>
+            {{ scope.row.content }}
           </template>
-          <div class="file-info">
-            <div class="file-name" :title="file.fileName">{{ file.fileName }}</div>
-            <div class="file-size">{{ formatFileSize(file.size) }}</div>
+        </template>
+      </el-table-column>
+      <el-table-column prop="type" label="类型" width="90">
+        <template #default="scope">
+          <el-tag :type="getTypeTag(scope.row.type)">
+            {{ messageTypes[scope.row.type] || '提示消息' }}
+          </el-tag>
+        </template>
+      </el-table-column>
+      <el-table-column prop="sendTime" label="发送时间" width="200" sortable></el-table-column>
+      <el-table-column prop="sendId" label="发送对象ID" width="180">
+        <template #default="scope">
+          <div style="display: flex; align-items: center;">
+            <span>{{scope.row.sendId }}</span>
           </div>
-          <div class="file-actions-row">
-            <button @click.stop="viewFile(file)">查看</button>
-            <button @click.stop="downloadFile(file)">下载</button>
-            <button @click.stop="shareFile(file)">发送</button>
+        </template>
+      </el-table-column>
+      <el-table-column prop="recvId" label="接收对象ID" width="180">
+        <template #default="scope">
+          <div style="display: flex; align-items: center;">
+            <span>{{  scope.row.recvId ||"群  "+ scope.row.groupId }}</span>
           </div>
-        </div>
+        </template>
+      </el-table-column>
+      <el-table-column fixed="right" label="操作" width="250">
+        <template #default="scope">
+          <div class="operation-buttons">
+            <el-button size="small" type="text" @click="handleBlock(scope.row)">转发</el-button>
+            <el-divider direction="vertical"></el-divider>
+            <el-button size="small" type="text" @click="handleDelete(scope.row)"
+                       class="delete-button">删除</el-button>
+          </div>
+        </template>
+      </el-table-column>
+    </el-table>
+
+    <!-- 添加删除确认对话框 -->
+    <el-dialog
+        :visible.sync="deleteDialogVisible"
+        width="400px"
+        :close-on-click-modal="false"
+    >
+      <div class="dialog-content">
+        <p>确定要删除该消息吗？</p>
+        <p class="dialog-info">删除后不可恢复，请谨慎操作！</p>
       </div>
-    </div>
+      <template #footer>
+                <span class="dialog-footer">
+                    <el-button @click="deleteDialogVisible = false">取 消</el-button>
+                    <el-button type="danger" @click="confirmDelete">确 定</el-button>
+                </span>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script>
+import dayjs from 'dayjs'  // 导入 dayjs
+import emotion from '@/api/emotion'  // 导入表情包API
+
 export default {
-  name: 'FileItem',
+  name: 'AdminMessage',
   data() {
     return {
-      files: [],
-      currentType: 'all'  // 新增：当前选中的文件类型
-    }
-  },
-  computed: {
-    filteredFiles() {
-      if (this.currentType === 'all') {
-        return this.files
-      }
-      return this.files.filter(file =>
-          this.getFileType(file.fileName).type === this.currentType
-      )
+      contentType: 'all',
+      chatType: 'all',
+      searchKeyword: '',
+      messages: [], // 消息列表
+      loading: false,
+      privateMessages: [], // 私聊消息
+      groupMessages: [], // 群聊消息
+      // 定义消息类型映射
+      messageTypes: {
+        0: '文字消息',
+        1: '图片消息',
+        2: '文件消息',
+        3: '语音消息',
+        4: '提示消息'  // 添加提示消息类型
+      },
+      blockDialogVisible: false,
+      deleteDialogVisible: false,
+      currentMessage: null  // 当前操作的消息
     }
   },
   methods: {
-    getFileType(fileName) {
+    getTypeTag(type) {
+      const types = {
+        0: '',        // 文字消息
+        1: 'success', // 图片消息
+        2: 'primary', // 文件消息
+        3: 'warning', // 语音消息
+        4: 'info'     // 提示消息
+      }
+      return types[type] || 'info'  // 默认使用 info 类型
+    },
+    // 加载私聊消息
+    async loadPrivateMessages() {
+      try {
+        const res = await this.$http({
+          url: '/message/private/list/user',
+          method: 'get'
+        })
+        if (res) {
+          this.privateMessages = res
+        }
+      } catch (error) {
+        console.error('获取私聊消息列表失败:', error)
+        this.$message.error('获取私聊消息列表失败')
+      }
+    },
+
+    // 加载群聊消息
+    async loadGroupMessages() {
+      try {
+        const res = await this.$http({
+          url: '/message/group/list/user',
+          method: 'get'
+        })
+        if (res) {
+          this.groupMessages = res
+        }
+      } catch (error) {
+        console.error('获取群聊消息列表失败:', error)
+        this.$message.error('获取群聊消息列表失败')
+      }
+    },
+
+    // 加载所有消息
+    async loadMessages() {
+      try {
+        this.loading = true
+        await Promise.all([
+          this.loadPrivateMessages(),
+          this.loadGroupMessages()
+        ])
+        // 合并消息列表并格式化时间
+        this.messages = [
+          ...this.privateMessages.map(msg => ({
+            ...msg,
+            chatType: 'private',
+            sendTime: msg.sendTime ? dayjs(msg.sendTime).format('YYYY-MM-DD HH:mm:ss') : ''
+          })),
+          ...this.groupMessages.map(msg => ({
+            ...msg,
+            chatType: 'group',
+            sendTime: msg.sendTime ? dayjs(msg.sendTime).format('YYYY-MM-DD HH:mm:ss') : ''
+          }))
+        ]
+      } catch (error) {
+        console.error('获取消息列表失败:', error)
+        this.$message.error('获取消息列表失败')
+      } finally {
+        this.loading = false
+      }
+    },
+
+    // 修改筛选逻辑
+    filterMessages() {
+      let filteredMessages = [...this.messages]
+
+      // 按聊天类型筛选
+      if (this.chatType !== 'all') {
+        filteredMessages = filteredMessages.filter(msg => msg.chatType === this.chatType)
+      }
+
+      // 按内容类型筛选
+      if (this.contentType !== 'all') {
+        const typeMap = {
+          'text': 0,
+          'image': 1,
+          'file': 2,
+          'audio': 3,
+          'other': 4  // 添加其他类型的映射
+        }
+        filteredMessages = filteredMessages.filter(msg => {
+          if (this.contentType === 'other') {
+            // 如果选择"其他"，显示除了已知类型之外的所有消息
+            return ![0, 1, 2, 3].includes(msg.type)
+          }
+          return msg.type === typeMap[this.contentType]
+        })
+      }
+
+      // 按关键字搜索
+      if (this.searchKeyword) {
+        const keyword = this.searchKeyword.toLowerCase()
+        filteredMessages = filteredMessages.filter(msg =>
+            msg.content.toLowerCase().includes(keyword) ||
+            msg.sender.toLowerCase().includes(keyword) ||
+            msg.receiver.toLowerCase().includes(keyword)
+        )
+      }
+
+      return filteredMessages
+    },
+    handleSearch() {
+      // TODO: 实现搜索功能
+      this.loadMessages()
+    },
+    handleBlock(row) {
+      this.currentMessage = row
+      this.blockDialogVisible = true
+    },
+    handleDelete(row) {
+      this.currentMessage = row
+      this.deleteDialogVisible = true
+    },
+    async confirmBlock() {
+      try {
+        this.loading = true
+        // TODO: 调用屏蔽消息的 API
+        await this.$http({
+          url: '/message/block',
+          method: 'post',
+          data: {
+            id: this.currentMessage.id
+          }
+        })
+        this.$message.success('屏蔽成功')
+        this.blockDialogVisible = false
+        this.loadMessages()  // 重新加载消息列表
+      } catch (error) {
+        console.error('屏蔽消息失败:', error)
+        this.$message.error('屏蔽消息失败')
+      } finally {
+        this.loading = false
+      }
+    },
+    async confirmDelete() {
+      try {
+        this.loading = true
+        // TODO: 调用删除消息的 API
+        await this.$http({
+          url: '/message/delete',
+          method: 'delete',
+          params: {
+            id: this.currentMessage.id
+          }
+        })
+        this.$message.success('删除成功')
+        this.deleteDialogVisible = false
+        this.loadMessages()  // 重新加载消息列表
+      } catch (error) {
+        console.error('删除消息失败:', error)
+        this.$message.error('删除消息失败')
+      } finally {
+        this.loading = false
+      }
+    },
+    // 解析JSON内容
+    parseContent(content) {
+      try {
+        const parsed = typeof content === 'string' ? JSON.parse(content) : content
+        // 如果是图片消息，返回包含原图和缩略图URL的对象
+        if (parsed.originUrl && parsed.thumbUrl) {
+          return {
+            originUrl: parsed.originUrl,
+            thumbUrl: parsed.thumbUrl
+          }
+        }
+        // 如果是音频消息，返回包含音频URL和时长的对象
+        if (parsed.url && parsed.duration !== undefined) {
+          return {
+            url: parsed.url,
+            duration: parsed.duration
+          }
+        }
+        // 其他情况返回原始解析结果
+        return parsed
+      } catch (e) {
+        return { url: '', duration: 0, originUrl: '', thumbUrl: '' }
+      }
+    },
+
+    // 从URL中获取文件名
+    getFileName(url) {
+      if (!url) return '未知文件'
+      const parts = url.split('/')
+      return parts[parts.length - 1]
+    },
+
+    // 判断是否为表情消息
+    isEmojiMessage(content) {
+      return /^#[\u4E00-\u9FA5]{1,3};$/.test(content)
+    },
+
+    // 获取表情名称
+    getEmojiName(content) {
+      return content.replace(/^#(.*?);$/, '$1')
+    },
+
+    // 获取表情图片URL
+    getEmojiUrl(content) {
+      return emotion.textToUrl(content)
+    },
+
+    // 获取文件图标和颜色
+    getFileIcon(fileName) {
       const extension = fileName.split('.').pop().toLowerCase()
 
       // 文档类型
-      if (['doc', 'docx', 'pdf', 'txt', 'xls', 'xlsx', 'ppt', 'pptx'].includes(extension)) {
-        // 文档类型
-        if (['doc', 'docx'].includes(extension)) {
-          return { type: 'document',icon: 'el-icon-document',color: '#4285f4' }  // Word文档
-        }
-        if (['xls', 'xlsx'].includes(extension)) {
-          return { type: 'document',icon: 'el-icon-tickets', color: '#34a853' }   // Excel表格
-        }
-        if (['ppt', 'pptx'].includes(extension)) {
-          return { type: 'document',icon: 'el-icon-collection', color: '#fbbc05' } // PPT演示
-        }
-        if (extension === 'pdf') {
-          return { type: 'document',icon: 'el-icon-document-copy', color: '#ea4335' } // PDF文档
-        }
-        if (extension === 'txt') {
-          return { type: 'document',icon: 'el-icon-document', color: '#666666' }   // 文本文件
-        }
+      if (['doc', 'docx'].includes(extension)) {
+        return { icon: 'el-icon-document', color: '#4285f4' }  // Word文档
       }
+      if (['xls', 'xlsx'].includes(extension)) {
+        return { icon: 'el-icon-tickets', color: '#34a853' }   // Excel表格
+      }
+      if (['ppt', 'pptx'].includes(extension)) {
+        return { icon: 'el-icon-collection', color: '#fbbc05' } // PPT演示
+      }
+      if (extension === 'pdf') {
+        return { icon: 'el-icon-document-copy', color: '#ea4335' } // PDF文档
+      }
+      if (extension === 'txt') {
+        return { icon: 'el-icon-document', color: '#666666' }   // 文本文件
+      }
+
       // 图片类型
       if (['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp'].includes(extension)) {
-        return {type: 'image',icon: 'el-icon-picture', color: '#34a853'}
+        return { icon: 'el-icon-picture', color: '#34a853' }
       }
+
       // 音频类型
       if (['mp3', 'wav', 'ogg', 'flac', 'm4a'].includes(extension)) {
-        return {type: 'audio',icon: 'el-icon-headset', color: '#fbbc05'}
+        return { icon: 'el-icon-headset', color: '#fbbc05' }
       }
+
       // 视频类型
       if (['mp4', 'avi', 'mov', 'wmv', 'flv', 'mkv'].includes(extension)) {
-        return { type: 'video',icon: 'el-icon-video-camera', color: '#ea4335' }
+        return { icon: 'el-icon-video-camera', color: '#ea4335' }
       }
+
       // 压缩文件
       if (['zip', 'rar', '7z', 'tar', 'gz'].includes(extension)) {
         return { icon: 'el-icon-folder', color: '#607d8b' }
@@ -131,251 +448,264 @@ export default {
         return { icon: 'el-icon-edit-outline', color: '#ff9800' }
       }
 
-      // 其他类型
-      return {type: 'other',icon: 'el-icon-document', color: '#909399'}
+      // 默认图标
+      return { icon: 'el-icon-document', color: '#909399' }
     },
-    async fetchFiles() {
-      try {
-        const response = await this.$http.get('/file/list')
-        this.files = response
-      } catch (error) {
-        console.error('获取文件列表失败:', error)
-      }
-    },
-    viewFile(file) {
-      if (file.url) {
-        window.open(file.url, '_blank')
-      } else {
-        this.$message.warning('文件链接不存在')
-      }
-    },
-    downloadFile(file) {
-      if (file.url) {
-        // 创建一个隐藏的 a 标签
+
+    // 下载文件
+    downloadFile(url, fileName) {
+      if (url) {
         const link = document.createElement('a')
-        link.href = file.url
+        link.href = url
         link.target = '_blank'
-        link.download = file.fileName || this.getFileName(file.url)  // 设置下载文件名
+        link.download = fileName || this.getFileName(url)
         document.body.appendChild(link)
         link.click()
         document.body.removeChild(link)
-      } else {
-        this.$message.warning('文件链接不存在')
       }
     },
-    shareFile(file) {
-      // 实现分享文件的逻辑
-      console.log('分享文件:', file)
-    },
-    filterByType(type) {
-      this.currentType = type
-    },
-    // 格式化文件大小
-    formatFileSize(size) {
-      if (!size) return '0 B'
-      const units = ['B', 'KB', 'MB', 'GB', 'TB']
-      let index = 0
-      let fileSize = size
-
-      while (fileSize >= 1024 && index < units.length - 1) {
-        fileSize /= 1024
-        index++
+    async getUserInfo(id) {
+      try {
+        const res = await this.$http({
+          url: `/user/find/${id}`,
+          method: 'get'
+        })
+        return res
+      } catch (error) {
+        console.error('获取用户信息失败:', error)
+        return null
       }
-
-      return `${fileSize.toFixed(2)} ${units[index]}`
+    }
+  },
+  computed: {
+    // 过滤后的消息列表
+    filteredMessages() {
+      return this.filterMessages()
+    }
+  },
+  watch: {
+    // 监听筛选条件变化
+    chatType() {
+      this.loadMessages()
     },
-    // 获取文件名
-    getFileName(url) {
-      if (!url) return '未知文件'
-      const parts = url.split('/')
-      return parts[parts.length - 1]
+    contentType() {
+      this.loadMessages()
+    },
+    searchKeyword() {
+      this.loadMessages()
     }
   },
   mounted() {
-    this.fetchFiles()
+    this.loadMessages()
   }
 }
 </script>
 
-<style scoped>
-.file-manager {
-  display: flex;
-  padding: 0;
-  height: 100%;
-}
+<style lang="scss" scoped>
+.admin-message {
+  // 添加页面标题样式
+  .page-header {
+    margin-bottom: 24px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid #ebeef5;
 
-.file-sidebar {
-  width: 200px;
-  background-color: #f8f9fa;
-  padding: 20px 0;
-  border-right: 1px solid #eee;
-}
+    .title {
+      display: flex;
+      align-items: center;
+      font-size: 20px;
+      font-weight: 500;
+      color: #303133;
+      margin-bottom: 8px;
 
-.sidebar-item {
-  padding: 12px 24px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  transition: all 0.3s ease;
-}
+      i {
+        margin-right: 8px;
+        font-size: 24px;
+        color: #409EFF;
+      }
+    }
 
-.sidebar-item i {
-  margin-right: 12px;
-  width: 20px;
-  text-align: center;
-}
+    .description {
+      font-size: 14px;
+      color: #909399;
+    }
+  }
 
-.sidebar-item:hover {
-  background-color: #f0f0f0;
-}
+  .operation-bar {
+    margin-bottom: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 
-.sidebar-item.active {
-  background-color: #e9ecef;
-  font-weight: bold;
-}
+    .filter-section {
+      display: flex;
+      align-items: center;
+      gap: 10px;
 
-.file-content {
-  flex: 1;
-  padding: 20px;
-  overflow-y: auto;
-}
+      .el-radio-group {
+        line-height: 1;
+      }
 
-.file-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-  gap: 15px;
-  padding: 20px;
-}
+      .el-divider--vertical {
+        height: 20px;
+        margin: 0 5px;
+      }
+    }
 
-.file-item {
-  position: relative;
-  border: none;
-  padding: 15px;
-  text-align: center;
-  transition: all 0.3s ease;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  cursor: pointer;
-  border-radius: 4px;
-  border: 1px solid transparent;
-}
+    .search-area {
+      display: flex;
+      align-items: center;
+    }
+  }
 
-.file-icon {
-  width: 80px;
-  height: 80px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  margin-bottom: 8px;
-  font-size: 40px;
-  background-color: #f8f9fa;
-  border-radius: 4px;
-  transition: all 0.3s;
-}
+  .operation-buttons {
+    display: flex;
+    align-items: center;
 
-.file-info {
-  width: 100%;
-  text-align: center;
-}
+    .el-button {
+      padding: 0 5px;
+    }
 
-.file-name {
-  max-width: 100%;
-  font-size: 12px;
-  color: #333;
-  margin-bottom: 2px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
+    .el-divider {
+      margin: 0 5px;
+    }
 
-.file-size {
-  display: block;
-  font-size: 11px;
-  color: #999;
-  margin-top: 2px;
-}
+    .delete-button {
+      color: #F56C6C;
+    }
+  }
 
-.file-actions-row {
-  display: none;
-  justify-content: center;
-  gap: 5px;
-  margin-top: 5px;
-  position: absolute;
-  bottom: -5px;
-  left: 0;
-  right: 0;
-  background-color: rgba(255, 255, 255, 0.9);
-  padding: 5px 0;
-}
+  // 表格样式
+  .small-font-table {
+    font-size: 13px; // 设置表格内容字体大小
 
-.file-item:hover .file-actions-row {
-  display: flex;
-}
+    // 设置表头字体大小
+    :deep(.el-table__header-wrapper) {
+      font-size: 13px;
+    }
 
-.file-actions-row button {
-  font-size: 12px;
-  padding: 2px 8px;
-  border: none;
-  background: none;
-  color: #666;
-  cursor: pointer;
-}
+    // 设置单元格内容字体大小
+    :deep(.el-table__body-wrapper) {
+      font-size: 13px;
+    }
 
-.file-actions-row button:hover {
-  color: #1890ff;
-}
+    // 设置表格中按钮的字体大小
+    :deep(.el-button--text) {
+      font-size: 13px;
+    }
 
-.file-actions {
-  display: none;
-}
+    // 设置状态标签的字体大小
+    :deep(.el-tag) {
+      font-size: 12px;
+    }
 
-.file-type,
-.file-size {
-  display: none;
-}
+    // 自定义滚动条样式
+    :deep(.el-table__body-wrapper::-webkit-scrollbar) {
+      width: 8px;
+      height: 8px;
+    }
 
-.file-item:hover {
-  border-color: #e6e6e6;
-  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
-}
+    :deep(.el-table__body-wrapper::-webkit-scrollbar-thumb) {
+      background: #ddd;
+      border-radius: 4px;
+    }
 
-.file-item:hover .file-icon {
-  transform: none;
-}
+    :deep(.el-table__body-wrapper::-webkit-scrollbar-track) {
+      background: #f5f5f5;
+    }
+  }
 
-.file-preview {
-  width: 80px;
-  height: 80px;
-  margin-bottom: 8px;
-  border-radius: 4px;
-  overflow: hidden;
-}
+  .image-error {
+    width: 50px;
+    height: 50px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: #f5f7fa;
+    color: #909399;
+    font-size: 20px;
+    border-radius: 4px;
+  }
 
-.preview-image {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
+  // 添加图片预览相关样式
+  :deep(.el-image) {
+    cursor: pointer;
+    transition: all 0.3s;
 
-.image-error {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  background-color: #f5f7fa;
-  color: #909399;
-}
+    &:hover {
+      opacity: 0.8;
+    }
+  }
 
-:deep(.el-image) {
-  width: 100%;
-  height: 100%;
-}
+  .audio-content, .file-content {
+    display: flex;
+    align-items: center;
+    gap: 5px;
 
-:deep(.el-image__inner) {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
+    i {
+      font-size: 16px;
+      color: #909399;
+    }
+
+    a {
+      color: #409EFF;
+      text-decoration: none;
+      &:hover {
+        text-decoration: underline;
+      }
+    }
+  }
+
+  .emoji-content {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #606266;
+
+    .emoji-image {
+      width: 24px;
+      height: 24px;
+      object-fit: contain;
+    }
+
+    span {
+      color: #606266;
+      font-size: 13px;
+    }
+  }
+
+  .dialog-content {
+    padding: 20px 0;
+    text-align: center;
+
+    p {
+      margin: 0;
+      line-height: 1.8;
+
+      &.dialog-info {
+        font-size: 13px;
+        color: #909399;
+        margin-top: 10px;
+      }
+    }
+  }
+
+  .dialog-footer {
+    text-align: right;
+  }
+
+  .file-content {
+    i {
+      font-size: 18px;  // 稍微调大图标尺寸
+      transition: all 0.3s;
+    }
+
+    &:hover i {
+      transform: scale(1.1);  // 悬停时图标缩放效果
+    }
+
+    a {
+      cursor: pointer;  // 添加鼠标手型
+    }
+  }
 }
 </style>

@@ -70,5 +70,15 @@ public class GroupMessageController {
     {
         return ResultUtils.success(groupMessageService.listMessage());
     }
+
+    @GetMapping("/list/user")
+    @Operation(summary = "查询消息列表", description = "查询消息列表")
+    public Result<List<GroupMessageVO>> listUserMessage()
+    {
+        return ResultUtils.success(groupMessageService.listUserMessage());
+    }
+
+
+
 }
 

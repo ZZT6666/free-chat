@@ -139,6 +139,18 @@ public class PrivateMessageServiceImpl extends ServiceImpl<PrivateMessageMapper,
         return messageInfos;
     }
     @Override
+    public List<PrivateMessageVO> listUserMessage() {
+        UserSession session = SessionContext.getSession();
+        List<PrivateMessage> messages = this.list().stream()
+                .filter(m -> m.getSendId().equals(session.getUserId()) || m.getRecvId().equals(session.getUserId()))
+                .collect(Collectors.toList());
+        List<PrivateMessageVO> messageInfos = messages.stream()
+                .map(m -> BeanUtils.copyProperties(m, PrivateMessageVO.class))
+                .collect(Collectors.toList());
+
+        return messageInfos;
+    }
+    @Override
     public void pullOfflineMessage(Long minId) {
         UserSession session = SessionContext.getSession();
         if (!imClient.isOnline(session.getUserId())) {

@@ -56,5 +56,7 @@ public interface GroupMessageService extends IService<GroupMessage> {
     List<GroupMessageVO> findHistoryMessage(Long groupId, Long page, Long size);
 
     List<GroupMessageVO> listMessage();
+    List<GroupMessageVO> listUserMessage();
+
 
 }

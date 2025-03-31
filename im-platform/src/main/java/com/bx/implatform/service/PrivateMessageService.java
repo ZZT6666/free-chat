@@ -37,6 +37,7 @@ public interface PrivateMessageService extends IService<PrivateMessage> {
     List<PrivateMessageVO> findHistoryMessage(Long friendId, Long page, Long size);
 
     List<PrivateMessageVO> listMessage();
+    List<PrivateMessageVO> listUserMessage();
 
     /**
      * 拉取离线消息，只能拉取最近1个月的消息，最多拉取1000条

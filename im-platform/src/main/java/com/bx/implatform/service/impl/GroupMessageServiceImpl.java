@@ -350,7 +350,22 @@ public class GroupMessageServiceImpl extends ServiceImpl<GroupMessageMapper, Gro
         List<GroupMessageVO> messageInfos =messages.stream().map(m -> BeanUtils.copyProperties(m, GroupMessageVO.class)).collect(Collectors.toList());
         return messageInfos;
     }
+    public List<GroupMessageVO> listUserMessage() {
+        UserSession session = SessionContext.getSession();
+        // 查询当前用户的群id列表
+        List<GroupMember> groupMembers = groupMemberService.findByUserId(session.getUserId());
+        // 拉取群列表
+        List<Long> ids = groupMembers.stream().map((GroupMember::getGroupId)).collect(Collectors.toList());
 
+        List<GroupMessage> messages = this.list().stream()
+                .filter(m -> m.getSendId().equals(session.getUserId()) || isIn(m.getGroupId(),ids))
+                .collect(Collectors.toList());
+        List<GroupMessageVO> messageInfos =messages.stream().map(m -> BeanUtils.copyProperties(m, GroupMessageVO.class)).collect(Collectors.toList());
+        return messageInfos;
+    }
+    public boolean isIn(long id, List<Long> ids){
+        return ids.stream().anyMatch(i -> i.equals(id));
+    }
     private List<Long> getReadedUserIds(Map<Object, Object> maxIdMap, Long messageId, Long sendId) {
         List<Long> userIds = new LinkedList<>();
         maxIdMap.forEach((k, v) -> {

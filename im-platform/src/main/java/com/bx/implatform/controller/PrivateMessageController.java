@@ -69,5 +69,11 @@ public class PrivateMessageController {
     {
         return ResultUtils.success(privateMessageService.listMessage());
     }
+    @GetMapping("/list/user")
+    @Operation(summary = "查询消息列表", description = "查询消息列表")
+    public Result<List<PrivateMessageVO>> listUserMessage()
+    {
+        return ResultUtils.success(privateMessageService.listUserMessage());
+    }
 }
 
