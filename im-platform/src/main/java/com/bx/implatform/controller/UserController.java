@@ -75,11 +75,5 @@ public class UserController {
         userService.adminModifyPassword(dto);
         return ResultUtils.success();
     }
-    @PutMapping("/updatePwd")
-    @Operation(summary = "修改密码", description = "修改用户密码")
-    public Result updatePassword(@Valid @RequestBody UpdataPwdDTO dto) {
-        userService.updataPassword(dto);
-        return ResultUtils.success();
-    }
 }
 

@@ -32,12 +32,6 @@ public interface UserService extends IService<User> {
      */
     void adminModifyPassword(AdminModifyPwdDTO dto);
     /**
-     * 修改用户密码
-     *
-     * @param dto 修改密码dto
-     */
-    void updataPassword(UpdataPwdDTO dto);
-    /**
      * 用refreshToken换取新 token
      *
      * @param refreshToken 刷新token

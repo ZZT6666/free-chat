@@ -119,7 +119,6 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         this.save(user);
         log.info("注册用户，用户id:{},用户名:{},昵称:{}", user.getId(), dto.getUserName(), dto.getNickName());
     }
-
     @Override
     public void modifyPassword(ModifyPwdDTO dto) {
         UserSession session = SessionContext.getSession();
@@ -138,15 +137,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         this.updateById(user);
         log.info("用户修改密码，用户id:{},用户名:{},昵称:{}", user.getId(), user.getUserName(), user.getNickName());
     }
-    @Override
-    public void updataPassword(UpdataPwdDTO dto) {
-        User user = this.getById(dto.getId());
-        if(dto.getOldPassword().equals(user.getPassword())) {
-            user.setPassword(passwordEncoder.encode(dto.getNewPassword()));
-        }
-        this.updateById(user);
-        log.info("用户修改密码，用户id:{},用户名:{},昵称:{}", user.getId(), user.getUserName(), user.getNickName());
-    }
+
     @Override
     public User findUserByUserName(String username) {
         LambdaQueryWrapper<User> queryWrapper = Wrappers.lambdaQuery();

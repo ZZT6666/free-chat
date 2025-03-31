@@ -141,7 +141,7 @@ export default {
       this.$refs.passwordForm.validate((valid) => {
         if (valid) {
           this.$http({
-            url: '/user/updatePwd',
+            url: '/modifyPwd',
             method: 'put',
             data: {
               id: this.$store.state.userStore.userInfo.id,
