@@ -59,10 +59,20 @@ public class GroupServiceImpl extends ServiceImpl<GroupMapper, Group> implements
         User user = userService.getById(session.getUserId());
         // 保存群组数据
         Group group = BeanUtils.copyProperties(vo, Group.class);
-        group.setOwnerId(user.getId());
+        if (group != null) {
+            group.setOwnerId(user.getId());
+            if(user.getSex() == 0){
+                group.setHeadImage(Constant.group1);
+                group.setHeadImageThumb(Constant.group1);
+            }else {
+                group.setHeadImage(Constant.group2);
+                group.setHeadImageThumb(Constant.group2);
+            }
+        }
         this.save(group);
         // 把群主加入群
         GroupMember member = new GroupMember();
+        member.setType(0);
         member.setGroupId(group.getId());
         member.setUserId(user.getId());
         member.setHeadImage(user.getHeadImageThumb());
