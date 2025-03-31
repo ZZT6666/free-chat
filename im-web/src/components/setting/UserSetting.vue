@@ -19,24 +19,6 @@
         </el-form>
       </el-tab-pane>
 
-      <!-- 通知设置面板 -->
-      <el-tab-pane label="通知设置" name="notification">
-        <el-form :model="notificationForm" label-width="100px" size="small">
-          <el-form-item label="消息通知">
-            <el-switch v-model="notificationForm.messageNotification"></el-switch>
-          </el-form-item>
-          <el-form-item label="声音提醒">
-            <el-switch v-model="notificationForm.soundNotification"></el-switch>
-          </el-form-item>
-          <el-form-item label="桌面通知">
-            <el-switch v-model="notificationForm.desktopNotification"></el-switch>
-          </el-form-item>
-          <el-form-item>
-            <el-button type="primary" @click="updateNotificationSettings">保存设置</el-button>
-          </el-form-item>
-        </el-form>
-      </el-tab-pane>
-
       <!-- 隐私设置面板 -->
       <el-tab-pane label="隐私设置" name="privacy">
         <el-form :model="privacyForm" label-width="120px" size="small">
@@ -125,7 +107,7 @@ export default {
       this.$emit('update:visible', false);
       this.$emit('close');
     },
-    
+
     // 重置所有表单
     resetForms() {
       this.passwordForm.oldPassword = '';
@@ -160,17 +142,6 @@ export default {
       });
     },
 
-    // 更新通知设置
-    updateNotificationSettings() {
-      this.$http({
-        url: '/user/notification/settings',
-        method: 'put',
-        data: this.notificationForm
-      }).then(() => {
-        this.$message.success('通知设置更新成功');
-      });
-    },
-
     // 更新隐私设置
     updatePrivacySettings() {
       this.$http({
@@ -200,4 +171,4 @@ export default {
     text-align: right;
   }
 }
-</style> 
+</style>
