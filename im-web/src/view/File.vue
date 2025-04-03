@@ -148,10 +148,7 @@
       <el-table-column label="操作" min-width="120" fixed="right">
         <template #default="scope">
           <div class="operation-buttons">
-            <el-button size="small" type="text" @click="handleBlock(scope.row)">转发</el-button>
-            <el-divider direction="vertical"></el-divider>
-            <el-button size="small" type="text" @click="handleDelete(scope.row)"
-                       class="delete-button">删除</el-button>
+            <el-button size="small" type="text" @click="handleBlock(scope.row)">详情</el-button>
           </div>
         </template>
       </el-table-column>
@@ -258,7 +255,7 @@ export default {
           this.loadPrivateMessages(),
           this.loadGroupMessages()
         ])
-        
+
         // 合并消息列表
         this.messages = [
           ...this.privateMessages.map(msg => ({
@@ -276,7 +273,7 @@ export default {
         // 获取所有用户ID和群组ID
         const userIds = new Set()
         const groupIds = new Set()
-        
+
         this.messages.forEach(msg => {
           userIds.add(msg.sendId)
           if (msg.chatType === 'private') {
@@ -287,14 +284,14 @@ export default {
         })
 
         // 批量获取用户信息
-        const userRequests = Array.from(userIds).map(id => 
+        const userRequests = Array.from(userIds).map(id =>
           this.getUserInfo(id).then(user => {
             if (user) this.$set(this.userMap, id, user)
           })
         )
-        
+
         // 批量获取群组信息
-        const groupRequests = Array.from(groupIds).map(groupId => 
+        const groupRequests = Array.from(groupIds).map(groupId =>
           this.getGroupInfo(groupId).then(group => {
             if (group) this.$set(this.groupMap, groupId, group)
           })
@@ -774,28 +771,28 @@ export default {
       flex-direction: column;
       align-items: flex-start;
       gap: 10px;
-      
+
       .filter-section {
         flex-wrap: wrap;
       }
     }
-    
+
     .small-font-table {
       :deep(.el-table__body-wrapper) {
         overflow-x: auto;
       }
-      
+
       // 小屏幕时调整最小宽度
       :deep(th), :deep(td) {
         min-width: 80px !important;
       }
-      
+
       // 操作列在小屏幕时换行显示
       .operation-buttons {
         flex-direction: column;
         align-items: flex-start;
         gap: 5px;
-        
+
         .el-divider {
           display: none;
         }
@@ -813,7 +810,7 @@ export default {
   .file-content {
     flex-wrap: wrap;
     gap: 3px;
-    
+
     i {
       flex-shrink: 0; // 防止图标被压缩
     }
