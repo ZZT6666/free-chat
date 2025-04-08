@@ -25,12 +25,6 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.StringJoiner;
 
-/**
- * @author: blue
- * @date: 2024-12-08
- * @version: 1.0
- */
-
 @Aspect
 @Component
 @AllArgsConstructor
@@ -42,20 +36,19 @@ public class RepeatSubmitAspect {
     public void doBefore(JoinPoint point, RepeatSubmit repeatSubmit) throws Throwable {
         // 如果注解不为0 则使用注解数值
         long interval = repeatSubmit.timeUnit().toMillis(repeatSubmit.interval());
-        HttpServletRequest request =
-            ((ServletRequestAttributes)RequestContextHolder.getRequestAttributes()).getRequest();
+        HttpServletRequest request = ((ServletRequestAttributes) RequestContextHolder.getRequestAttributes())
+                .getRequest();
         String url = request.getRequestURL().toString();
         Long userId = SessionContext.getSession().getUserId();
         String reqParams = argsArrayToString(point.getArgs());
         String md5 = SecureUtil.md5(StrUtil.join(":", userId, url, reqParams));
         // 唯一标识
-        String key = String.join(":",RedisKey.IM_REPEAT_SUBMIT,md5) ;
-        if(redisTemplate.hasKey(key)){
+        String key = String.join(":", RedisKey.IM_REPEAT_SUBMIT, md5);
+        if (redisTemplate.hasKey(key)) {
             throw new GlobalException(repeatSubmit.message());
         }
-        redisTemplate.opsForValue().set(key,1,repeatSubmit.interval(),repeatSubmit.timeUnit());
+        redisTemplate.opsForValue().set(key, 1, repeatSubmit.interval(), repeatSubmit.timeUnit());
     }
-
 
     /**
      * 参数拼装
@@ -85,12 +78,12 @@ public class RepeatSubmitAspect {
         if (clazz.isArray()) {
             return clazz.getComponentType().isAssignableFrom(MultipartFile.class);
         } else if (Collection.class.isAssignableFrom(clazz)) {
-            Collection collection = (Collection)o;
+            Collection collection = (Collection) o;
             for (Object value : collection) {
                 return value instanceof MultipartFile;
             }
         } else if (Map.class.isAssignableFrom(clazz)) {
-            Map map = (Map)o;
+            Map map = (Map) o;
             for (Object value : map.values()) {
                 return value instanceof MultipartFile;
             }

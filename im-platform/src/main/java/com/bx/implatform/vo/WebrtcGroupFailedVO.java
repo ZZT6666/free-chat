@@ -5,11 +5,6 @@ import lombok.Data;
 
 import java.util.List;
 
-/**
- * @author: Blue
- * @date: 2024-06-09
- * @version: 1.0
- */
 @Data
 @Schema(description = "用户加入群通话失败VO")
 public class WebrtcGroupFailedVO {

@@ -8,11 +8,6 @@ import lombok.Data;
 
 import java.util.List;
 
-/**
- * @author: Blue
- * @date: 2024-06-01
- * @version: 1.0
- */
 @Data
 @Schema(description = "邀请用户进入群视频通话DTO")
 public class WebrtcGroupInviteDTO {

@@ -3,11 +3,6 @@ package com.bx.implatform.session;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
-/**
- * @author: Blue
- * @date: 2024-06-02
- * @version: 1.0
- */
 @Data
 @Schema(description = "用户信息")
 public class WebrtcUserInfo {

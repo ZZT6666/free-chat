@@ -22,12 +22,6 @@ import org.springframework.stereotype.Component;
 import java.lang.reflect.Method;
 import java.util.Objects;
 
-/**
- * @author: blue
- * @date: 2024-06-09
- * @version: 1.0
- */
-
 @Slf4j
 @Aspect
 @Order(0)
@@ -46,35 +40,34 @@ public class RedisLockAspect {
         RedisLock annotation = method.getAnnotation(RedisLock.class);
         // 解析表达式中的key
         String key = parseKey(joinPoint);
-        String lockKey = StrUtil.join(":",annotation.prefixKey(),key);
+        String lockKey = StrUtil.join(":", annotation.prefixKey(), key);
         // 上锁
         RLock lock = redissonClient.getLock(lockKey);
-        lock.lock(annotation.waitTime(),annotation.unit());
+        lock.lock(annotation.waitTime(), annotation.unit());
         try {
             // 执行方法
             return joinPoint.proceed();
-        }finally {
+        } finally {
             lock.unlock();
         }
     }
 
-    private String parseKey(ProceedingJoinPoint joinPoint){
+    private String parseKey(ProceedingJoinPoint joinPoint) {
         Method method = ((MethodSignature) joinPoint.getSignature()).getMethod();
         RedisLock annotation = method.getAnnotation(RedisLock.class);
         // el解析需要的上下文对象
         EvaluationContext context = new StandardEvaluationContext();
         // 参数名
         String[] params = parameterNameDiscoverer.getParameterNames(method);
-        if(Objects.isNull(params)){
+        if (Objects.isNull(params)) {
             return annotation.key();
         }
         Object[] args = joinPoint.getArgs();
         for (int i = 0; i < params.length; i++) {
-            context.setVariable(params[i], args[i]);//所有参数都作为原材料扔进去
+            context.setVariable(params[i], args[i]);// 所有参数都作为原材料扔进去
         }
         Expression expression = parser.parseExpression(annotation.key());
         return expression.getValue(context, String.class);
     }
-
 
 }

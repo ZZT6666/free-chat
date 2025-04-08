@@ -5,11 +5,6 @@ import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
-/**
- * @author: Blue
- * @date: 2024-06-01
- * @version: 1.0
- */
 @Data
 @Schema(description = "回复用户连接请求DTO")
 public class WebrtcGroupAnswerDTO {

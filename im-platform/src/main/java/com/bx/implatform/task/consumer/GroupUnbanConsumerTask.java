@@ -23,11 +23,6 @@ import org.springframework.stereotype.Component;
 import java.util.Date;
 import java.util.List;
 
-/**
- * @author: Blue
- * @date: 2024-07-15
- * @version: 1.0
- */
 @Slf4j
 @Component
 @RequiredArgsConstructor
@@ -42,7 +37,7 @@ public class GroupUnbanConsumerTask extends RedisMQConsumer<GroupUnbanDTO> {
 
     @Override
     public void onMessage(GroupUnbanDTO dto) {
-        log.info("群聊解除封禁处理,群id:{}",dto.getId());
+        log.info("群聊解除封禁处理,群id:{}", dto.getId());
         // 群聊成员列表
         List<Long> userIds = groupMemberService.findUserIdsByGroupId(dto.getId());
         // 保存消息

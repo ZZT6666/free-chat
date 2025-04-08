@@ -9,14 +9,9 @@ import com.bx.imserver.netty.processor.ProcessorFactory;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
-/**
- * @author: Blue
- * @date: 2024-07-16
- * @version: 1.0
- */
 @Slf4j
 @Component
-@RedisMQListener(queue = IMRedisKey.IM_MESSAGE_SYSTEM_QUEUE,batchSize = 10)
+@RedisMQListener(queue = IMRedisKey.IM_MESSAGE_SYSTEM_QUEUE, batchSize = 10)
 public class PullSystemMessageTask extends AbstractPullMessageTask<IMRecvInfo> {
 
     @Override

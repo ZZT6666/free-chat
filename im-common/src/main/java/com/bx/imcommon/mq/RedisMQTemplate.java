@@ -7,11 +7,6 @@ import org.springframework.data.redis.core.RedisTemplate;
 
 import java.util.Properties;
 
-/**
- * @author: Blue
- * @date: 2024-07-16
- * @version: 1.0
- */
 public class RedisMQTemplate extends RedisTemplate<String, Object> {
 
     private String version = Strings.EMPTY;
@@ -21,13 +16,14 @@ public class RedisMQTemplate extends RedisTemplate<String, Object> {
             RedisConnection connection = RedisConnectionUtils.getConnection(getConnectionFactory());
             Properties properties = connection.info();
             version = properties.getProperty("redis_version");
-            RedisConnectionUtils.releaseConnection(connection,getConnectionFactory());
+            RedisConnectionUtils.releaseConnection(connection, getConnectionFactory());
         }
         return version;
     }
 
     /**
      * 是否支持批量拉取，redis版本大于6.2支持批量拉取
+     * 
      * @return
      */
     Boolean isSupportBatchPull() {

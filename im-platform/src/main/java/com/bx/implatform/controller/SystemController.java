@@ -13,11 +13,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 
 
-/**
- * @author: blue
- * @date: 2024-06-10
- * @version: 1.0
- */
+
 @Tag(name = "系统相关")
 @RestController
 @RequestMapping("/system")

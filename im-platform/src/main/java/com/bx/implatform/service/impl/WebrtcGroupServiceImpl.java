@@ -5,6 +5,7 @@ import com.bx.imcommon.model.IMGroupMessage;
 import com.bx.imcommon.model.IMUserInfo;
 import com.bx.implatform.contant.RedisKey;
 import com.bx.implatform.dto.*;
+import com.bx.implatform.entity.GroupMember;
 import com.bx.implatform.entity.GroupMessage;
 import com.bx.implatform.enums.MessageStatus;
 import com.bx.implatform.enums.MessageType;
@@ -266,7 +267,7 @@ public class WebrtcGroupServiceImpl implements WebrtcGroupService {
         message.setRecvIds(Collections.singletonList(targetUid));
 
         message.setData(messageInfo);
-
+        log.info("发送群组消息,groupId:{},targetUid:{},type:{},content:{}", groupId, targetUid, type.name(), content);
         imClient.sendGroupMessage(message);
     }
 

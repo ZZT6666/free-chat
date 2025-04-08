@@ -14,11 +14,6 @@ import org.springframework.stereotype.Component;
 
 import java.util.Collections;
 
-/**
- * @author: Blue
- * @date: 2024-07-15
- * @version: 1.0
- */
 @Slf4j
 @Component
 @RequiredArgsConstructor
@@ -26,9 +21,10 @@ import java.util.Collections;
 public class UserBannedConsumerTask extends RedisMQConsumer<UserBanDTO> {
 
     private final IMClient imClient;
+
     @Override
     public void onMessage(UserBanDTO dto) {
-        log.info("用户被封禁处理,userId:{},原因:{}",dto.getId(),dto.getReason());
+        log.info("用户被封禁处理,userId:{},原因:{}", dto.getId(), dto.getReason());
         // 推送消息将用户赶下线
         SystemMessageVO msgInfo = new SystemMessageVO();
         msgInfo.setType(MessageType.USER_BANNED.code());

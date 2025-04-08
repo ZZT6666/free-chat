@@ -42,7 +42,8 @@ public class WebrtcPrivateServiceImpl implements WebrtcPrivateService {
     @Override
     public void call(Long uid, String mode, String offer) {
         UserSession session = SessionContext.getSession();
-        log.info("发起呼叫,sid:{},uid:{}", session.getUserId(), uid);
+        log.info(offer);
+        log.info("发起呼叫,sid:{},uid:{}，offer:{}", session.getUserId(), uid,offer);
         // 创建webrtc会话
         WebrtcPrivateSession webrtcSession = new WebrtcPrivateSession();
         webrtcSession.setCallerId(session.getUserId());

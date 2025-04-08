@@ -6,15 +6,9 @@ import lombok.Data;
 
 import java.util.List;
 
-/**
- * @author: Blue
- * @date: 2024-06-09
- * @version: 1.0
- */
 @Data
 @Schema(description = "群通话信息VO")
 public class WebrtcGroupInfoVO {
-
 
     @Schema(description = "是否在通话中")
     private Boolean isChating;

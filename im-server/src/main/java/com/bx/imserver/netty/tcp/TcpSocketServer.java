@@ -18,9 +18,6 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * TCP服务器,用于连接非网页的客户端,协议格式： 8字节内容的长度+IMSendInfo的JSON序列化
- *
- * @author Blue
- * @date 2022-11-20
  */
 @Slf4j
 @Component
