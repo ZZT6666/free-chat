@@ -27,7 +27,12 @@ public class PrivateMessageController {
     public Result<PrivateMessageVO> sendMessage(@Valid @RequestBody PrivateMessageDTO vo) {
         return ResultUtils.success(privateMessageService.sendMessage(vo));
     }
-
+    @DeleteMapping("/block/{id}")
+    @Operation(summary = "屏蔽消息", description = "屏蔽私聊消息")
+    public Result<Long> blockMessage(@NotNull(message = "消息id不能为空") @PathVariable Long id) {
+        privateMessageService.blockMessage(id);
+        return ResultUtils.success();
+    }
     @DeleteMapping("/recall/{id}")
     @Operation(summary = "撤回消息", description = "撤回私聊消息")
     public Result<Long> recallMessage(@NotNull(message = "消息id不能为空") @PathVariable Long id) {

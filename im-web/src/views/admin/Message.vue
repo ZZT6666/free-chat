@@ -39,7 +39,7 @@
                 <template #default="scope">
                     <!-- 图片消息显示缩略图 -->
                     <template v-if="scope.row.type === 1">
-                        <el-image 
+                        <el-image
                             style="width: 50px; height: 50px; border-radius: 4px;"
                             :src="parseContent(scope.row.content).thumbUrl"
                             :preview-src-list="[parseContent(scope.row.content).originUrl]"
@@ -56,8 +56,8 @@
                     <!-- 表情消息显示 -->
                     <template v-else-if="isEmojiMessage(scope.row.content)">
                         <div class="emoji-content">
-                            <img 
-                                :src="getEmojiUrl(scope.row.content)" 
+                            <img
+                                :src="getEmojiUrl(scope.row.content)"
                                 :alt="getEmojiName(scope.row.content)"
                                 class="emoji-image"
                             />
@@ -76,14 +76,14 @@
                     <!-- 文件消息显示链接 -->
                     <template v-else-if="scope.row.type === 2">
                         <div class="file-content">
-                            <i 
+                            <i
                                 :class="getFileIcon(getFileName(parseContent(scope.row.content).url)).icon"
                                 :style="{ color: getFileIcon(getFileName(parseContent(scope.row.content).url)).color }"
                             ></i>
-                            <a 
-                                href="javascript:;" 
+                            <a
+                                href="javascript:;"
                                 @click="downloadFile(
-                                    parseContent(scope.row.content).url, 
+                                    parseContent(scope.row.content).url,
                                     getFileName(parseContent(scope.row.content).url)
                                 )"
                             >
@@ -118,6 +118,16 @@
                         <span>{{  scope.row.recvId ||"群  "+ scope.row.groupId }}</span>
                     </div>
                 </template>
+            </el-table-column>
+            <el-table-column prop="status" label="状态" width="120">
+              <template #default="scope">
+              <span :style="{
+                color: scope.row.status === 2 ? '#F56C6C' : '#67C23A',
+                fontWeight: 500
+              }">
+                {{ scope.row.status === 2 ? '屏蔽' : '显示' }}
+              </span>
+              </template>
             </el-table-column>
             <el-table-column fixed="right" label="操作" width="160">
                 <template #default="scope">
@@ -325,11 +335,8 @@ export default {
                 this.loading = true
                 // TODO: 调用屏蔽消息的 API
                 await this.$http({
-                    url: '/message/block',
-                    method: 'post',
-                    data: {
-                        id: this.currentMessage.id
-                    }
+                    url: `/message/${this.currentMessage.chatType}/block/${this.currentMessage.id}`,
+                    method: 'delete',
                 })
                 this.$message.success('屏蔽成功')
                 this.blockDialogVisible = false
@@ -412,7 +419,7 @@ export default {
         // 获取文件图标和颜色
         getFileIcon(fileName) {
             const extension = fileName.split('.').pop().toLowerCase()
-            
+
             // 文档类型
             if (['doc', 'docx'].includes(extension)) {
                 return { icon: 'el-icon-document', color: '#4285f4' }  // Word文档

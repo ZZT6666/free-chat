@@ -29,6 +29,12 @@ public class GroupMessageController {
         return ResultUtils.success(groupMessageService.sendMessage(vo));
     }
 
+    @DeleteMapping("/block/{id}")
+    @Operation(summary = "屏蔽消息", description = "屏蔽群聊消息")
+    public Result<Long> blockMessage(@NotNull(message = "消息id不能为空") @PathVariable Long id) {
+        groupMessageService.blockMessage(id);
+        return ResultUtils.success();
+    }
     @DeleteMapping("/recall/{id}")
     @Operation(summary = "撤回消息", description = "撤回群聊消息")
     public Result<Long> recallMessage(@NotNull(message = "消息id不能为空") @PathVariable Long id) {

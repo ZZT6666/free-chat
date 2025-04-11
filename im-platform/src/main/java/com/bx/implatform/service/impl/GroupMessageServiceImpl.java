@@ -93,7 +93,33 @@ public class GroupMessageServiceImpl extends ServiceImpl<GroupMessageMapper, Gro
         log.info("发送群聊消息，发送id:{},群聊id:{},内容:{}", session.getUserId(), dto.getGroupId(), dto.getContent());
         return msgInfo;
     }
+    @Override
+    public void blockMessage(Long id) {
+        UserSession session = SessionContext.getSession();
+        GroupMessage msg = this.getById(id);
+        if (Objects.isNull(msg)) {
+            throw new GlobalException("消息不存在");
+        }
 
+        // 修改数据库
+        msg.setStatus(MessageStatus.RECALL.code());
+        this.updateById(msg);
+        // 群发
+        List<Long> userIds = groupMemberService.findUserIdsByGroupId(msg.getGroupId());
+
+        GroupMessageVO msgInfo = BeanUtils.copyProperties(msg, GroupMessageVO.class);
+        msgInfo.setType(MessageType.RECALL.code());
+        msgInfo.setSendTime(new Date());
+
+        IMGroupMessage<GroupMessageVO> sendMessage = new IMGroupMessage<>();
+        sendMessage.setSender(new IMUserInfo(session.getUserId(), session.getTerminal()));
+        sendMessage.setRecvIds(userIds);
+        sendMessage.setData(msgInfo);
+        sendMessage.setSendResult(false);
+        sendMessage.setSendToSelf(false);
+        imClient.sendGroupMessage(sendMessage);
+
+    }
     @Override
     public void recallMessage(Long id) {
         UserSession session = SessionContext.getSession();

@@ -72,7 +72,29 @@ public class PrivateMessageServiceImpl extends ServiceImpl<PrivateMessageMapper,
         log.info("发送私聊消息，发送id:{},接收id:{}，内容:{}", session.getUserId(), dto.getRecvId(), dto.getContent());
         return msgInfo;
     }
+    @Override
+    public void blockMessage(Long id) {
+        UserSession session = SessionContext.getSession();
+        PrivateMessage msg = this.getById(id);
+        if (Objects.isNull(msg)) {
+            throw new GlobalException("消息不存在");
+        }
+        // 修改消息状态
+        msg.setStatus(MessageStatus.RECALL.code());
+        this.updateById(msg);
+        // 推送消息
+        PrivateMessageVO msgInfo = BeanUtils.copyProperties(msg, PrivateMessageVO.class);
+        msgInfo.setType(MessageType.RECALL.code());
+        msgInfo.setSendTime(new Date());
 
+        IMPrivateMessage<PrivateMessageVO> sendMessage = new IMPrivateMessage<>();
+        sendMessage.setSender(new IMUserInfo(session.getUserId(), session.getTerminal()));
+        sendMessage.setRecvId(msgInfo.getRecvId());
+        sendMessage.setSendToSelf(false);
+        sendMessage.setData(msgInfo);
+        sendMessage.setSendResult(false);
+        imClient.sendPrivateMessage(sendMessage);
+    }
     @Override
     public void recallMessage(Long id) {
         UserSession session = SessionContext.getSession();

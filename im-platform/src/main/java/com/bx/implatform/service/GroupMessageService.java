@@ -16,7 +16,12 @@ public interface GroupMessageService extends IService<GroupMessage> {
      * @return 群聊id
      */
     GroupMessageVO sendMessage(GroupMessageDTO dto);
-
+    /**
+     * 屏蔽消息
+     *
+     * @param id 消息id
+     */
+    void blockMessage(Long id);
     /**
      * 撤回消息
      *
